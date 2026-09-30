@@ -128,7 +128,7 @@ const LS={
   set(k,v){try{localStorage.setItem('bsd.'+k,JSON.stringify(v));}catch(e){}},
   del(k){try{localStorage.removeItem('bsd.'+k);}catch(e){}}
 };
-let TOKEN=LS.get('token','');
+let TOKEN='';
 let RAW={};                 // file name -> parsed JSON as last fetched
 let QUEUE=LS.get('queue',[]); // taps not yet saved: {file,id,patch,message}
 let flushing=false, refreshing=false, lastOk=0;
@@ -147,9 +147,9 @@ function gh(method,path,body){
 }
 class ApiError extends Error{constructor(status,msg){super(msg);this.status=status;}}
 function explain(r){
-  if(r.status===401)return 'GitHub refused the token. Forget it in Settings and paste a new one.';
+  if(r.status===401)return 'GitHub refused the saved access. Lock the app in Settings; the owner may need to renew it.';
   if(r.status===403)return 'GitHub said no (403). The token may lack Contents: Read and write, or you are rate limited.';
-  if(r.status===404)return 'Could not find the desk data. The token needs access to badshrooms-desk-data.';
+  if(r.status===404)return 'Could not find the desk data.';
   return 'GitHub answered '+r.status+'.';
 }
 async function getFile(name){
@@ -257,17 +257,54 @@ $('save-discord').addEventListener('click',e=>{
   st.textContent='Saving. The next pulse shows your member count.';
 });
 $('forget').addEventListener('click',()=>{
-  if(QUEUE.length&&!confirm('Some taps have not saved yet. Forget the token anyway?'))return;
-  LS.del('token');LS.del('queue');TOKEN='';QUEUE=[];RAW={};showGate();
+  if(QUEUE.length&&!confirm('Some taps have not saved yet. Lock the app anyway?'))return;
+  LS.del('key');LS.del('queue');TOKEN='';QUEUE=[];RAW={};showGate();
 });
-$('save-token').addEventListener('click',async()=>{
-  const v=$('token-input').value.trim(), er=$('setup-err');
-  if(!v){er.textContent='Paste the token first.';er.hidden=false;return;}
-  TOKEN=v;
+
+/* ---------- unlock: a password opens vault.json, which holds the GitHub token ---------- */
+const b64ToBytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const bytesToB64=u=>{let t='';u.forEach(c=>t+=String.fromCharCode(c));return btoa(t);};
+async function getVault(){
+  const r=await fetch('vault.json',{cache:'no-store'});
+  if(!r.ok)throw new Error('vault');
+  return r.json();
+}
+async function openVault(v,key){
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(v.iv)},key,b64ToBytes(v.ct));
+  const o=JSON.parse(new TextDecoder().decode(pt));
+  if(!o.token)throw new Error('vault');
+  return o;
+}
+async function unlockWithPassword(pw){
+  const v=await getVault();
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64ToBytes(v.salt),iterations:v.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},true,['decrypt']);
+  const o=await openVault(v,key);
+  LS.set('key',bytesToB64(new Uint8Array(await crypto.subtle.exportKey('raw',key))));
+  TOKEN=o.token;
+}
+async function unlockWithStoredKey(){
+  const k=LS.get('key','');if(!k)return false;
   try{
-    await getFile('settings');
-    LS.set('token',v);er.hidden=true;$('token-input').value='';showGate();
-  }catch(e){TOKEN='';er.textContent=e instanceof ApiError?e.message:'Could not reach GitHub.';er.hidden=false;}
+    const key=await crypto.subtle.importKey('raw',b64ToBytes(k),'AES-GCM',false,['decrypt']);
+    TOKEN=(await openVault(await getVault(),key)).token;return true;
+  }catch(e){
+    // vault changed (new password) or unreadable: the stored key no longer opens it
+    LS.del('key');return false;
+  }
+}
+$('unlock-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const er=$('setup-err'), pw=$('pw-input').value, btn=$('unlock-btn');
+  if(!pw){er.textContent='Type the password.';er.hidden=false;return;}
+  btn.disabled=true;er.hidden=true;
+  try{
+    await unlockWithPassword(pw);
+    $('pw-input').value='';showGate();
+  }catch(err){
+    er.textContent=err&&err.message==='vault'?'Could not load the app data. Try again.':"That's not it.";
+    er.hidden=false;
+  }finally{btn.disabled=false;}
 });
 
 function showGate(){
@@ -277,4 +314,4 @@ function showGate(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 setInterval(()=>{if(document.visibilityState==='visible')refresh();},60000);
-showGate();
+(async()=>{await unlockWithStoredKey();showGate();})();

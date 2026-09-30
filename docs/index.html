@@ -19,16 +19,12 @@
 <body>
 <div class="setup" id="setup" hidden>
   <h1>Bad Shrooms Command Center</h1>
-  <p class="lede">One setup step on this phone. The desk data lives in a private GitHub repo, and this page needs a token to read and write it.</p>
-  <ol>
-    <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">https://github.com/settings/personal-access-tokens/new</a></li>
-    <li>Name it Command Center and pick an expiry you can live with.</li>
-    <li>Repository access: Only select repositories, then badshrooms-desk-data.</li>
-    <li>Permissions: Repository permissions, Contents: Read and write.</li>
-    <li>Press Generate token, copy it, and paste it below. It stays on this phone.</li>
-  </ol>
-  <div class="row"><input type="password" id="token-input" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" id="save-token">Save token</button></div>
-  <p class="errline" id="setup-err" hidden></p>
+  <p class="lede">Password, please.</p>
+  <form class="row" id="unlock-form">
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" autocapitalize="off" spellcheck="false" aria-label="Password">
+    <button type="submit" id="unlock-btn">Unlock</button>
+  </form>
+  <p class="errline" id="setup-err" role="status" hidden></p>
 </div>
 <div class="wrap" id="app" hidden>
 
@@ -114,9 +110,9 @@
     <p class="meta" id="discord-status"></p>
   </div>
   <div class="panel">
-    <h3>GitHub token</h3>
-    <p>This phone holds a token that reads and writes the desk data. Forget it to sign out; you paste it again to come back.</p>
-    <div class="row"><button type="button" id="forget">Forget token</button></div>
+    <h3>Lock app</h3>
+    <p>Locking clears the unlock from this phone. You type the password again to come back.</p>
+    <div class="row"><button type="button" id="forget">Lock app</button></div>
   </div>
 </section>
 
