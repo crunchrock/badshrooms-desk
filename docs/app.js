@@ -115,7 +115,7 @@ function creatorCard(c){
   </article>`;
 }
 function renderCreators(){
-  const list=OUT.filter(c=>(c.status||'to_send')===FILTER).sort((a,b)=>String(a.tier||'Z').localeCompare(String(b.tier||'Z'))||String(a.name).localeCompare(String(b.name)));
+  const list=OUT.filter(c=>(c.status||'to_send')===FILTER).sort((a,b)=>(a.rank||999)-(b.rank||999)||String(a.tier||'Z').localeCompare(String(b.tier||'Z'))||String(a.name).localeCompare(String(b.name)));
   document.getElementById('creator-list').innerHTML=list.length?list.slice(0,CREATOR_LIMIT).map(creatorCard).join(''):'<div class="empty">No creators here.</div>';
   const more=document.getElementById('creator-more');if(more){more.hidden=list.length<=CREATOR_LIMIT;more.textContent=`Show five more (${list.length-CREATOR_LIMIT} left)`;}
   document.querySelectorAll('#filters button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===FILTER)));
