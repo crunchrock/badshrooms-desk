@@ -11,7 +11,9 @@ const nowISO=()=>new Date().toISOString();
 const fmt=v=>v==null||v===''?'–':Number(v).toLocaleString('en-US');
 
 function renderMission(){
-  const last=DAYS[DAYS.length-1]||{}, prev=DAYS[DAYS.length-2]||{};
+  const latest=DAYS[DAYS.length-1]||{};
+  const privateDays=DAYS.filter(r=>r.wishlists_outstanding!=null&&r.wishlists_outstanding!=='');
+  const last=privateDays[privateDays.length-1]||latest, prev=privateDays[privateDays.length-2]||{};
   const p=PULSE||{}, rv=p.demo_reviews||{}, dc=p.discord||null, fl=p.followers||{};
   const delta=(a,b)=>{if(a==null||b==null||a===''||b==='')return '';const d=Number(a)-Number(b);if(!d)return '';return `<span class="d ${d>0?'good':'bad'}">${d>0?'+':''}${d.toLocaleString('en-US')}</span>`;};
   const line=(label,val,extra='')=>`<div class="line"><span>${label}</span><span><span class="v">${val}</span>${extra}</span></div>`;
@@ -35,11 +37,11 @@ function renderMission(){
   ];
   document.getElementById('ledger').innerHTML=leadRows.join('');
   const more=document.getElementById('ledger-more');if(more)more.innerHTML=moreRows.join('');
-  document.getElementById('pulse-stamp').textContent=`Steamworks numbers from ${last.date||'–'}; public numbers ${p.updated_at?('refreshed '+new Date(p.updated_at).toLocaleString()):'not refreshed yet'}.`;
+  document.getElementById('pulse-stamp').textContent=`Steamworks numbers last read ${last.date||'–'}; public numbers ${p.updated_at?('refreshed '+new Date(p.updated_at).toLocaleString()):'not refreshed yet'}.`;
   const revs=rv.latest||[];
   document.getElementById('review-list').innerHTML=revs.length?revs.map(r=>`<li><span class="meta"><b class="${r.up?'good':'bad'}">${r.up?'Recommended':'Not recommended'}</b>, ${esc(r.author)}, ${esc(r.date)}, ${fmt(r.minutes)} min played${r.dev_replied?', you replied':', <b class="bad">no reply yet</b>'}</span><span>${esc(r.text)}</span></li>`).join(''):'<li class="meta">No reviews yet.</li>';
-  if(DAYS.length){
-    const max=Math.max(1,...DAYS.map(r=>Number(r.wishlists_outstanding)||0));const lastN=DAYS.slice(-14);
+  if(privateDays.length){
+    const max=Math.max(1,...privateDays.map(r=>Number(r.wishlists_outstanding)||0));const lastN=privateDays.slice(-14);
     document.getElementById('days-chart').innerHTML=`<div class="bars" role="img" aria-label="Outstanding wishlists by day">${lastN.map(r=>{const v=Number(r.wishlists_outstanding)||0;return `<div class="bar"><span>${v}</span><i style="height:${Math.max(4,Math.round(v/max*90))}px"></i></div>`}).join('')}</div><div class="barlabels">${lastN.map(r=>`<span>${esc(String(r.date).slice(5))}</span>`).join('')}</div>`;
     document.getElementById('days-body').innerHTML=DAYS.map(r=>`<tr><td class="num">${esc(r.date)}</td><td class="num">${fmt(r.wishlists_outstanding)}</td><td class="num">${fmt(r.wishlist_adds)}</td><td class="num">${fmt(r.demo_licenses_total)}</td><td class="num">${fmt(r.demo_unique_users_total)}</td><td class="num">${fmt(r.demo_reviews_positive)}/${fmt(r.demo_reviews_negative)}</td><td class="num">${fmt(r.tiktok_studio_followers)}</td><td class="num">${fmt(r.tiktok_dev_followers)}</td><td>${esc(r.notes||'')}</td></tr>`).join('');
   }
