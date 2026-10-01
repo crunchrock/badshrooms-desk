@@ -6,7 +6,7 @@ function copyFrom(btn){
   const fallback=()=>{el.hidden=false;const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected, copy it';};
   try{navigator.clipboard.writeText(text).then(()=>flash(btn,'Copied'),fallback);}catch(e){fallback();}
 }
-let TASKS=[], OUT=[], DAYS=[], PULSE=null, FILTER='to_send';
+let TASKS=[], OUT=[], DAYS=[], PULSE=null, FILTER='to_send', TASK_AREA='all', CREATOR_LIMIT=5;
 const nowISO=()=>new Date().toISOString();
 const fmt=v=>v==null||v===''?'–':Number(v).toLocaleString('en-US');
 
@@ -15,23 +15,26 @@ function renderMission(){
   const p=PULSE||{}, rv=p.demo_reviews||{}, dc=p.discord||null, fl=p.followers||{};
   const delta=(a,b)=>{if(a==null||b==null||a===''||b==='')return '';const d=Number(a)-Number(b);if(!d)return '';return `<span class="d ${d>0?'good':'bad'}">${d>0?'+':''}${d.toLocaleString('en-US')}</span>`;};
   const line=(label,val,extra='')=>`<div class="line"><span>${label}</span><span><span class="v">${val}</span>${extra}</span></div>`;
-  const rows=[
+  const leadRows=[
     line('Wishlists',fmt(last.wishlists_outstanding),delta(last.wishlists_outstanding,prev.wishlists_outstanding)),
     line('Demo claims',fmt(last.demo_licenses_total),delta(last.demo_licenses_total,prev.demo_licenses_total)),
-    line('Demo players, all time',fmt(last.demo_unique_users_total)),
     line('Playing right now',fmt(p.demo_players_now)),
     line('Reviews',`<span class="good">${fmt(rv.positive)} up</span> / <span class="${rv.negative?'bad':''}">${fmt(rv.negative)} down</span>`),
-    line('Bug thread posts',fmt(p.bug_thread_posts)),
-    line('Looking-for-players posts',fmt(p.lfg_thread_posts)),
-    line('Discord',dc?`${fmt(dc.members)} <span class="d">${fmt(dc.online)} online</span>`:'<a href="#settings">add invite</a>'),
     line('TikTok studio',fmt(fl.tiktok_studio!=null?fl.tiktok_studio:last.tiktok_studio_followers)),
     line('TikTok dev',fmt(fl.tiktok_dev!=null?fl.tiktok_dev:last.tiktok_dev_followers)),
+  ];
+  const moreRows=[
+    line('Demo players, all time',fmt(last.demo_unique_users_total)),
+    line('Bug thread posts',fmt(p.bug_thread_posts)),
+    line('Looking-for-players posts',fmt(p.lfg_thread_posts)),
+    line('Discord',dc?`${fmt(dc.members)} <span class="d">${fmt(dc.online)} online</span>`:'add invite in More → Settings'),
     line('YouTube',fmt(fl.youtube!=null?fl.youtube:last.youtube_subscribers)),
     line('X',fmt(fl.x!=null?fl.x:last.x_followers)),
     line('Instagram',fmt(fl.instagram!=null?fl.instagram:last.instagram_followers)),
     line('External visits, 7 days',fmt(last.external_visits_7d)),
   ];
-  document.getElementById('ledger').innerHTML=rows.join('');
+  document.getElementById('ledger').innerHTML=leadRows.join('');
+  const more=document.getElementById('ledger-more');if(more)more.innerHTML=moreRows.join('');
   document.getElementById('pulse-stamp').textContent=`Steamworks numbers from ${last.date||'–'}; public numbers ${p.updated_at?('refreshed '+new Date(p.updated_at).toLocaleString()):'not refreshed yet'}.`;
   const revs=rv.latest||[];
   document.getElementById('review-list').innerHTML=revs.length?revs.map(r=>`<li><span class="meta"><b class="${r.up?'good':'bad'}">${r.up?'Recommended':'Not recommended'}</b>, ${esc(r.author)}, ${esc(r.date)}, ${fmt(r.minutes)} min played${r.dev_replied?', you replied':', <b class="bad">no reply yet</b>'}</span><span>${esc(r.text)}</span></li>`).join(''):'<li class="meta">No reviews yet.</li>';
@@ -48,7 +51,7 @@ function taskCard(d){
   const due=d.due?`<span class="tag due">by ${esc(d.due)}</span>`:'';
   const area=d.area?`<span class="tag">${esc(d.area)}</span>`:'';
   const btn=d.who==='james'?`<button type="button" class="done-btn" data-act="done" data-id="${esc(d.id)}">Done</button>`:'';
-  return `<li class="task ${d.who==='agent'?'agent':''}">
+  return `<li class="task ${d.who==='agent'?'agent':''} ${d.focus?'focus':''}">
     <div class="top"><h3>${esc(d.title)}</h3><div class="row">${due}${area}</div></div>
     ${d.note?`<p><b class="bad">${esc(d.note)}</b></p>`:''}
     ${d.why?`<p>${esc(d.why)}</p>`:''}
@@ -59,10 +62,19 @@ function taskCard(d){
 }
 function renderTasks(){
   const open=TASKS.filter(t=>t.status!=='done');
-  const mine=open.filter(t=>t.who==='james').sort((a,b)=>(a.priority||3)-(b.priority||3)||String(a.due||'9').localeCompare(String(b.due||'9')));
+  const order=(a,b)=>(Number(b.focus)-Number(a.focus))||(a.priority||3)-(b.priority||3)||String(a.due||'9').localeCompare(String(b.due||'9'))||String(a.title).localeCompare(String(b.title));
+  const mine=open.filter(t=>t.who==='james').sort(order);
+  let focus=mine.filter(t=>t.focus).slice(0,4);
+  if(!focus.length)focus=mine.slice(0,4);
+  const focusIds=new Set(focus.map(t=>t.id));
+  const later=mine.filter(t=>!focusIds.has(t.id)&&(TASK_AREA==='all'||t.area===TASK_AREA));
   const ag=open.filter(t=>t.who==='agent');
   const done=TASKS.filter(t=>t.status==='done').sort((a,b)=>String(b.done_at||'').localeCompare(String(a.done_at||'')));
-  document.getElementById('task-list').innerHTML=mine.length?mine.map(taskCard).join(''):'<li class="empty">Nothing open for you. Run the desk to pull in what is next.</li>';
+  document.getElementById('focus-list').innerHTML=focus.length?focus.map(taskCard).join(''):'<li class="empty">Nothing urgent. Go make the game.</li>';
+  document.getElementById('focus-count').textContent=focus.length?`${focus.length} actions`:'';
+  document.getElementById('later-summary').textContent=`Later (${mine.length-focus.length})`;
+  document.getElementById('task-list').innerHTML=later.length?later.map(taskCard).join(''):'<li class="empty">Nothing in this group.</li>';
+  document.querySelectorAll('#task-filters button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.area===TASK_AREA)));
   document.getElementById('agent-list').innerHTML=ag.length?ag.map(taskCard).join(''):'<li class="empty">No agent tasks open.</li>';
   document.getElementById('done-list').innerHTML=done.length?done.slice(0,50).map(t=>`<li><span>${esc(t.title)} <span class="meta">${esc((t.done_at||'').slice(0,10))} ${esc(t.done_by||'')}${t.verified?', checked live':''}</span></span><button type="button" data-act="undo" data-id="${esc(t.id)}">Undo</button></li>`).join(''):'<li class="meta">Nothing done yet.</li>';
   renderCounts();
@@ -102,15 +114,25 @@ function creatorCard(c){
 }
 function renderCreators(){
   const list=OUT.filter(c=>(c.status||'to_send')===FILTER).sort((a,b)=>String(a.tier||'Z').localeCompare(String(b.tier||'Z'))||String(a.name).localeCompare(String(b.name)));
-  document.getElementById('creator-list').innerHTML=list.length?list.map(creatorCard).join(''):'<div class="empty">No creators here.</div>';
+  document.getElementById('creator-list').innerHTML=list.length?list.slice(0,CREATOR_LIMIT).map(creatorCard).join(''):'<div class="empty">No creators here.</div>';
+  const more=document.getElementById('creator-more');if(more){more.hidden=list.length<=CREATOR_LIMIT;more.textContent=`Show five more (${list.length-CREATOR_LIMIT} left)`;}
   document.querySelectorAll('#filters button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===FILTER)));
   renderCounts();
 }
 function renderCounts(){
   const mine=TASKS.filter(t=>t.status!=='done'&&t.who==='james').length;
+  const focus=TASKS.filter(t=>t.status!=='done'&&t.who==='james'&&t.focus).length;
   const done=TASKS.filter(t=>t.status==='done').length;
   const by=s=>OUT.filter(c=>(c.status||'to_send')===s).length;
-  document.getElementById('counts').innerHTML=`<span class="chip you">${mine} open for you</span><span class="chip done">${done} done</span><span class="chip">${by('sent')} pitched</span><span class="chip">${by('replied')} replied</span><span class="chip">${by('posted')} posted</span><span class="chip">${by('to_send')} to pitch</span>`;
+  document.getElementById('counts').innerHTML=`<span class="chip you">${focus||Math.min(mine,4)} do now</span><span class="chip">${mine} total open</span><span class="chip">${by('sent')} pitched</span><span class="chip">${by('replied')} replied</span>`;
+}
+
+function setView(name){
+  if(!['today','numbers','creators','more'].includes(name))name='today';
+  document.querySelectorAll('[data-panel]').forEach(p=>{p.hidden=p.dataset.panel!==name;});
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
+  try{history.replaceState(null,'','#'+name);}catch(e){}
+  window.scrollTo(0,0);
 }
 function renderGuide(rows){
   rows=rows.slice().sort((a,b)=>(a.priority||3)-(b.priority||3)||String(b.updated||'').localeCompare(String(a.updated||'')));
@@ -242,13 +264,16 @@ function nameOf(id){const c=OUT.find(x=>x.id===id);return c?c.name:id;}
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.classList.contains('copy')){copyFrom(b);return;}
-  if(b.dataset.f){FILTER=b.dataset.f;renderCreators();return;}
+  if(b.dataset.view){setView(b.dataset.view);return;}
+  if(b.dataset.area){TASK_AREA=b.dataset.area;renderTasks();return;}
+  if(b.dataset.f){FILTER=b.dataset.f;CREATOR_LIMIT=5;renderCreators();return;}
   const act=b.dataset.act, id=b.dataset.id;
   if(!act)return;
   if(act==='done')enqueue({file:'tasks',id,patch:{status:'done',done_at:nowISO(),done_by:'james',verified:false},message:'Done: '+titleOf(id)});
   else if(act==='undo')enqueue({file:'tasks',id,patch:{status:'open',done_at:null,done_by:null,verified:false},message:'Undo: '+titleOf(id)});
   else if(act==='cstate'){const s=b.dataset.s;const patch={status:s};patch[s+'_at']=nowISO();enqueue({file:'outreach',id,patch,message:nameOf(id)+': '+s.replace('_',' ')});}
 });
+$('creator-more').addEventListener('click',()=>{CREATOR_LIMIT+=5;renderCreators();});
 $('refresh').addEventListener('click',()=>{setErr('');refresh();});
 $('save-discord').addEventListener('click',e=>{
   const val=$('discord-invite').value.trim(), st=$('discord-status');
@@ -314,4 +339,5 @@ function showGate(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 setInterval(()=>{if(document.visibilityState==='visible')refresh();},60000);
+setView(location.hash.slice(1)||'today');
 (async()=>{await unlockWithStoredKey();showGate();})();

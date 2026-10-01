@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bad Shrooms Command Center</title>
+<title>Bad Shrooms Marketing Desk</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14102B">
+<meta name="theme-color" content="#071012">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,7 +18,7 @@
 </head>
 <body>
 <div class="setup" id="setup" hidden>
-  <h1>Bad Shrooms Command Center</h1>
+  <h1>Bad Shrooms Marketing Desk</h1>
   <p class="lede">Password, please.</p>
   <form class="row" id="unlock-form">
     <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" autocapitalize="off" spellcheck="false" aria-label="Password">
@@ -26,23 +26,52 @@
   </form>
   <p class="errline" id="setup-err" role="status" hidden></p>
 </div>
-<div class="wrap" id="app" hidden>
 
-<header style="display:flex;flex-direction:column;gap:12px">
-  <h1>Bad Shrooms Command Center</h1>
-  <p class="lede">How the game is doing, what you do next, who to pitch, and what the advisors say. Tick things off as you go; say "run the marketing desk" in Claude Code and an agent checks your ticks, refreshes the numbers and adds what is next.</p>
+<div class="wrap" id="app" hidden>
+<header class="app-head">
+  <div>
+    <p class="eyebrow">BAD SHROOMS</p>
+    <h1>Marketing desk</h1>
+    <p class="lede">Do the next thing. Everything else can wait.</p>
+  </div>
   <div class="counts" id="counts"><span class="chip">Loading…</span></div>
   <div class="statusbar"><button type="button" id="refresh">Refresh</button><span class="meta" id="sync-stamp"></span></div>
   <p class="errline" id="err" role="status" hidden></p>
 </header>
 
-<nav class="jump" aria-label="Sections">
-  <a href="#mission">Mission Control</a><a href="#yours">Your list</a><a href="#outreach">Creators</a><a href="#strategy">Strategy</a><a href="#report">Content report</a><a href="#settings">Settings</a><a href="#reference">Reference</a>
+<nav class="tabs" aria-label="Desk views">
+  <button type="button" data-view="today" aria-pressed="true">Do now</button>
+  <button type="button" data-view="numbers" aria-pressed="false">Numbers</button>
+  <button type="button" data-view="creators" aria-pressed="false">Creators</button>
+  <button type="button" data-view="more" aria-pressed="false">More</button>
 </nav>
 
-<section id="mission">
-  <h2>Mission Control</h2>
+<main>
+<section id="today" data-panel="today">
+  <div class="section-head"><div><p class="eyebrow">TODAY</p><h2>Do now</h2></div><span class="focus-count" id="focus-count"></span></div>
+  <p>Finish these before opening the backlog.</p>
+  <ul class="tasks focus-list" id="focus-list"><li class="empty">Today’s actions load here.</li></ul>
+  <details class="later-box">
+    <summary id="later-summary">Later</summary>
+    <div class="filters" id="task-filters">
+      <button type="button" data-area="all" aria-pressed="true">All</button>
+      <button type="button" data-area="social" aria-pressed="false">Social</button>
+      <button type="button" data-area="steam" aria-pressed="false">Steam</button>
+      <button type="button" data-area="outreach" aria-pressed="false">Creators</button>
+      <button type="button" data-area="site" aria-pressed="false">Site</button>
+    </div>
+    <ul class="tasks" id="task-list"><li class="empty">The backlog loads here.</li></ul>
+  </details>
+</section>
+
+<section id="numbers" data-panel="numbers" hidden>
+  <p class="eyebrow">LIVE CHECK</p>
+  <h2>What moved</h2>
   <div class="ledger" id="ledger"><div class="line"><span>Numbers load here.</span><span></span></div></div>
+  <details class="numbers-more">
+    <summary>All numbers</summary>
+    <div class="ledger" id="ledger-more"></div>
+  </details>
   <p class="meta" id="pulse-stamp"></p>
   <div id="days-chart"></div>
   <h3>Latest reviews</h3>
@@ -51,19 +80,15 @@
     <summary>Daily log</summary>
     <div class="tablebox"><table>
       <thead><tr><th>Day</th><th class="num">Wishlists</th><th class="num">Added</th><th class="num">Demo claims</th><th class="num">Players</th><th class="num">Reviews +/−</th><th class="num">TikTok studio</th><th class="num">TikTok dev</th><th>Note</th></tr></thead>
-      <tbody id="days-body"><tr><td colspan="9"><div class="empty">A row lands here every time an agent runs the desk.</div></td></tr></tbody>
+      <tbody id="days-body"><tr><td colspan="9"><div class="empty">A row lands here every time the desk runs.</div></td></tr></tbody>
     </table></div>
   </details>
 </section>
 
-<section id="yours">
-  <h2>Your list</h2>
-  <ul class="tasks" id="task-list"><li class="empty">Your open tasks load here.</li></ul>
-</section>
-
-<section id="outreach">
-  <h2>Creators to pitch</h2>
-  <p>On your phone: tap <b>Channel</b> to open their app, <b>Copy DM</b> or <b>Copy email</b> for a message already filled in with their name, your opening line and their tracking link, then paste and send. Press <b>Sent</b> after it goes out, <b>Replied</b> when they answer, <b>Posted</b> when their video is up. A Sent with no reply after six days becomes a follow-up task.</p>
+<section id="creators" data-panel="creators" hidden>
+  <p class="eyebrow">OUTREACH</p>
+  <h2>Pitch five</h2>
+  <p>Open the channel, make sure the first line is still true, copy the message, send it, then press Sent.</p>
   <div class="filters" id="filters">
     <button type="button" data-f="to_send" aria-pressed="true">To send</button>
     <button type="button" data-f="sent" aria-pressed="false">Sent</button>
@@ -72,55 +97,56 @@
     <button type="button" data-f="pass" aria-pressed="false">Pass</button>
   </div>
   <div class="creators" id="creator-list"><div class="empty">Creators load here.</div></div>
+  <button type="button" class="load-more" id="creator-more" hidden>Show five more</button>
 </section>
 
-<section id="strategy">
-  <h2>Strategy</h2>
-  <p>What the advisors found and what they recommend, newest thinking first. Agents update these as the numbers come in.</p>
-  <div class="guide" id="guide-list"><div class="empty">Strategy notes load here.</div></div>
-</section>
+<section id="more" data-panel="more" hidden>
+  <p class="eyebrow">BACK OFFICE</p>
+  <h2>Everything else</h2>
 
-<section id="report">
-  <h2>Content report</h2>
-  <p>Every post with its numbers and a straight verdict on what held attention and what to change next time.</p>
-  <div class="tablebox"><table>
-    <thead><tr><th>Posted</th><th>Account</th><th>Post</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Like rate</th><th class="num">Saves</th><th>Verdict</th></tr></thead>
-    <tbody id="post-body"><tr><td colspan="8"><div class="empty">Posts load here.</div></td></tr></tbody>
-  </table></div>
-</section>
-
-<section id="agents">
-  <h2>What the agents are on</h2>
-  <ul class="tasks" id="agent-list"><li class="empty">Agent tasks load here.</li></ul>
-</section>
-
-<section id="done">
   <details>
+    <summary>Strategy</summary>
+    <p>Current findings and decisions, ordered by urgency.</p>
+    <div class="guide" id="guide-list"><div class="empty">Strategy notes load here.</div></div>
+  </details>
+
+  <details>
+    <summary>Content report</summary>
+    <div class="tablebox"><table>
+      <thead><tr><th>Posted</th><th>Account</th><th>Post</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Like rate</th><th class="num">Saves</th><th>Verdict</th></tr></thead>
+      <tbody id="post-body"><tr><td colspan="8"><div class="empty">Posts load here.</div></td></tr></tbody>
+    </table></div>
+  </details>
+
+  <details>
+    <summary>Agent work</summary>
+    <ul class="tasks" id="agent-list"><li class="empty">Agent tasks load here.</li></ul>
+  </details>
+
+  <details id="done">
     <summary>Done</summary>
     <ul class="donelist" id="done-list"><li class="meta">Nothing done yet.</li></ul>
   </details>
-</section>
 
-<section id="settings">
-  <h2>Settings</h2>
-  <div class="panel">
-    <h3>Your Discord invite</h3>
-    <p>Paste the server's invite link once. Mission Control then shows members and who is online, and agents put the link on the Steam page, the pinned threads and your bios.</p>
-    <div class="row"><input type="url" id="discord-invite" placeholder="https://discord.gg/…" inputmode="url" autocomplete="off"><button type="button" id="save-discord">Save</button></div>
-    <p class="meta" id="discord-status"></p>
-  </div>
-  <div class="panel">
-    <h3>Lock app</h3>
-    <p>Locking clears the unlock from this phone. You type the password again to come back.</p>
-    <div class="row"><button type="button" id="forget">Lock app</button></div>
-  </div>
-</section>
+  <details id="settings">
+    <summary>Settings</summary>
+    <div class="panel">
+      <h3>Your Discord invite</h3>
+      <p>Paste the server invite once so the desk can track members and reuse it in your links.</p>
+      <div class="row"><input type="url" id="discord-invite" placeholder="https://discord.gg/…" inputmode="url" autocomplete="off"><button type="button" id="save-discord">Save</button></div>
+      <p class="meta" id="discord-status"></p>
+    </div>
+    <div class="panel">
+      <h3>Lock app</h3>
+      <div class="row"><button type="button" id="forget">Lock app</button></div>
+    </div>
+  </details>
 
-<section id="reference">
-  <h2>Reference</h2>
-  <div class="grid2">
-    <div class="panel"><h3>Email template</h3>
-      <div class="copyrow"><pre class="copytext" id="tpl-email">Subject: Free demo for your group: bowling with guns
+  <details id="reference">
+    <summary>Creator templates</summary>
+    <div class="grid2">
+      <div class="panel"><h3>Email template</h3>
+        <div class="copyrow"><pre class="copytext" id="tpl-email">Subject: Free demo for your group: bowling with guns
 
 Hey {name},
 
@@ -137,14 +163,13 @@ No strings and nothing to sign. If you play it, send me the clip. If anything br
 James
 CrunchRock Games
 hello@crunchrock.games</pre><button class="copy" data-copy="tpl-email" type="button">Copy</button></div></div>
-    <div class="panel"><h3>One follow-up, 5 to 7 days later</h3>
-      <div class="copyrow"><pre class="copytext" id="tpl-fu">Hey {name}, bumping this once in case it got buried. Since I wrote, {one real new thing}. Free demo: {tracking link}. I won't ping again. James</pre><button class="copy" data-copy="tpl-fu" type="button">Copy</button></div>
-      <h3>Post everywhere at once</h3>
-      <p>Publer posts one upload to TikTok, Instagram Reels, YouTube Shorts and X for about $13 a month; the one-step posting agent replaces it when it lands.</p>
+      <div class="panel"><h3>One follow-up, 5 to 7 days later</h3>
+        <div class="copyrow"><pre class="copytext" id="tpl-fu">Hey {name}, bumping this once in case it got buried. Since I wrote, {one real new thing}. Free demo: {tracking link}. I won't ping again. James</pre><button class="copy" data-copy="tpl-fu" type="button">Copy</button></div>
+      </div>
     </div>
-  </div>
+  </details>
 </section>
-
+</main>
 </div>
 <script src="app.js"></script>
 </body>
