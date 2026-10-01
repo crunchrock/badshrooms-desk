@@ -62,7 +62,7 @@ function taskCard(d){
 }
 function renderTasks(){
   const open=TASKS.filter(t=>t.status!=='done');
-  const order=(a,b)=>(Number(b.focus)-Number(a.focus))||(a.priority||3)-(b.priority||3)||String(a.due||'9').localeCompare(String(b.due||'9'))||String(a.title).localeCompare(String(b.title));
+  const order=(a,b)=>(Number(b.focus)-Number(a.focus))||(a.focus_order||99)-(b.focus_order||99)||(a.priority||3)-(b.priority||3)||String(a.due||'9').localeCompare(String(b.due||'9'))||String(a.title).localeCompare(String(b.title));
   const mine=open.filter(t=>t.who==='james').sort(order);
   let focus=mine.filter(t=>t.focus).slice(0,4);
   if(!focus.length)focus=mine.slice(0,4);
