@@ -6,7 +6,7 @@ function copyFrom(btn){
   const fallback=()=>{el.hidden=false;const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected, copy it';};
   try{navigator.clipboard.writeText(text).then(()=>flash(btn,'Copied'),fallback);}catch(e){fallback();}
 }
-let TASKS=[], OUT=[], DAYS=[], PULSE=null, FILTER='to_send', TASK_AREA='all', CREATOR_LIMIT=5;
+let TASKS=[], OUT=[], DAYS=[], PULSE=null, KEYS={version:1,items:[]}, KEYS_KEY=null, KEYS_READY=false, FILTER='to_send', TASK_AREA='all', CREATOR_LIMIT=5;
 const nowISO=()=>new Date().toISOString();
 const fmt=v=>v==null||v===''?'–':Number(v).toLocaleString('en-US');
 
@@ -85,12 +85,15 @@ function lowerFirst(s){s=String(s||'').trim();return s?s.charAt(0).toLowerCase()
 function utmFor(c){const src=String(c.handle||c.name||'creator').toLowerCase().replace(/^@/,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');return 'https://store.steampowered.com/app/4995150/Bad_Shrooms/?utm_source='+src+'&utm_medium=creator&utm_campaign=demo_week';}
 function dmFor(c){const hook=c.hook?' '+lowerFirst(c.hook).replace(/\.?$/,'.'):'';return 'Hey '+c.name+','+hook+' I made a free party game demo on Steam for 2 to 4 players: bowling with guns, a floor-is-lava round where you shoot your friends into it, and a liminal bathroom maze with an alien chasing you. Felt like your crew\'s kind of mess. '+utmFor(c)+' No strings, just wanted you to have it. James';}
 function emailFor(c){return 'Subject: Free demo for your group: bowling with guns\n\nHey '+c.name+',\n\n'+(c.hook?String(c.hook).trim()+'\n\n':'')+'I\'m James, and I make Bad Shrooms on my own. It\'s a first-person party game for 2 to 4 players, on one couch or online through Steam, set in the apartment of an alien named Randy after your group buys bad mushrooms from a guy in a trenchcoat.\n\nThe free demo has Monkey Bowls, which is bowling with guns and trick combos, Hot Boys, where the floor turns to lava and you shoot your friends into it, and The Bathrooms, a liminal maze where Randy hunts you down. It ends in a boss fight with him.\n\nFree demo: '+utmFor(c)+'\n\nNo strings and nothing to sign. If you play it, send me the clip. If anything breaks I\'ll fix it fast; the first patch went out the morning after launch.\n\nJames\nCrunchRock Games\nhello@crunchrock.games';}
+const assignedKeys=id=>(KEYS.items||[]).filter(k=>k.outreach_id===id&&k.status!=='available'&&k.status!=='revoked');
 function creatorCard(c){
   const st=c.status||'to_send';
   const follow = st==='sent' && c.sent_at ? (()=>{const d=new Date(c.sent_at);d.setDate(d.getDate()+6);return `<span class="meta">follow up ${d.toISOString().slice(0,10)}</span>`})() : '';
   const hasEmail=!!(c.email&&/@.+\./.test(c.email));
   const route=hasEmail?c.email:(c.route||'');
   const id=esc(c.id);
+  const assigned=assignedKeys(c.id), keyCount=assigned.length;
+  const keyText=assigned.map(k=>k.key).join('\n');
   return `<article class="creator">
     <div class="who"><b>${esc(c.name)}</b><span class="state ${esc(st)}">${esc(st.replace('_',' '))}</span></div>
     <p class="meta">${esc(c.platform)} ${esc(c.handle)}, ${esc(c.followers)}${c.tier?`, tier ${esc(c.tier)}`:''}</p>
@@ -100,11 +103,15 @@ function creatorCard(c){
     <pre class="copytext" hidden id="cd-${id}">${esc(dmFor(c))}</pre>
     <pre class="copytext" hidden id="cm-${id}">${esc(emailFor(c))}</pre>
     <pre class="copytext" hidden id="ce-${id}">${esc(route)}</pre>
+    <pre class="copytext" hidden id="ck-${id}">${esc(keyText)}</pre>
     <div class="row">
       ${c.url?`<a class="go" href="${esc(c.url)}" target="_blank" rel="noopener">Channel</a>`:''}
       <button class="copy" data-copy="ch-${id}" type="button">Copy handle</button>
       <button class="copy" data-copy="cd-${id}" type="button">Copy DM</button>
       ${hasEmail?`<button class="copy" data-copy="ce-${id}" type="button">Copy address</button><button class="copy" data-copy="cm-${id}" type="button">Copy email</button>`:(route?`<button class="copy" data-copy="ce-${id}" type="button">Copy route</button>`:'')}
+    </div>
+    <div class="keyrow">
+      ${keyCount?`<span class="keycount">${keyCount} key${keyCount===1?'':'s'} assigned</span><button class="copy" data-copy="ck-${id}" type="button">Copy keys</button>`:`<label class="meta" for="kn-${id}">Alpha keys</label><select id="kn-${id}" data-key-count="${id}" aria-label="Keys to assign">${Array.from({length:8},(_,i)=>`<option value="${i+1}"${i===3?' selected':''}>${i+1}</option>`).join('')}</select><button type="button" data-act="keys" data-id="${id}">Assign + copy</button>`}
     </div>
     <div class="row">
       <button type="button" data-act="cstate" data-id="${id}" data-s="sent">Sent</button>
@@ -119,7 +126,15 @@ function renderCreators(){
   document.getElementById('creator-list').innerHTML=list.length?list.slice(0,CREATOR_LIMIT).map(creatorCard).join(''):'<div class="empty">No creators here.</div>';
   const more=document.getElementById('creator-more');if(more){more.hidden=list.length<=CREATOR_LIMIT;more.textContent=`Show five more (${list.length-CREATOR_LIMIT} left)`;}
   document.querySelectorAll('#filters button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===FILTER)));
+  renderKeyPool();
   renderCounts();
+}
+function renderKeyPool(){
+  const el=document.getElementById('key-pool');if(!el)return;
+  if(!KEYS_READY){el.innerHTML='<span>Key pool unavailable.</span>';return;}
+  const counts=(KEYS.items||[]).reduce((o,k)=>(o[k.status||'available']=(o[k.status||'available']||0)+1,o),{});
+  const available=counts.available||0, assigned=(counts.assigned||0)+(counts.sent||0);
+  el.innerHTML=`<span><b>${available}</b> available</span><span>${assigned} assigned</span>${available<24?'<span class="bad">Request/import more soon</span>':''}`;
 }
 function renderCounts(){
   const mine=TASKS.filter(t=>t.status!=='done'&&t.who==='james').length;
@@ -205,18 +220,19 @@ function project(){
   if(view.days||view.pulse)renderMission();
   if(view.guidance)renderGuide(Object.values(view.guidance));
   if(view.posts)renderPosts(Object.values(view.posts));
-  if(view.settings){const inp=$('discord-invite');if(inp&&!inp.value)inp.value=view.settings.discord_invite||'';}
+  if(view.settings){const inp=$('discord-invite');if(inp&&!inp.value)inp.value=view.settings.discord_invite||'';const sheet=$('key-sheet');if(sheet&&view.settings.key_intake_sheet)sheet.href=view.settings.key_intake_sheet;}
   stamp();
 }
 
 async function refresh(){
   if(!TOKEN||refreshing||flushing)return;
-  refreshing=true;
+  refreshing=true;let keyError='';
   try{
     const got=await Promise.all(FILES.map(f=>getFile(f).then(x=>[f,x.data])));
     got.forEach(([f,d])=>{RAW[f]=d;});
+    if(KEYS_KEY){try{const pool=await getKeyPool();KEYS=pool.data;KEYS_READY=true;}catch(e){KEYS_READY=false;keyError='The creator key pool could not load. Other desk data is still available.';}}
     lastOk=Date.now();
-    if(!QUEUE.length)setErr('');
+    if(!QUEUE.length)setErr(keyError);
     project();
   }catch(e){
     setErr(e instanceof ApiError?e.message:'Could not reach GitHub. Showing what was loaded last.');
@@ -273,7 +289,8 @@ document.addEventListener('click',e=>{
   if(!act)return;
   if(act==='done')enqueue({file:'tasks',id,patch:{status:'done',done_at:nowISO(),done_by:'james',verified:false},message:'Done: '+titleOf(id)});
   else if(act==='undo')enqueue({file:'tasks',id,patch:{status:'open',done_at:null,done_by:null,verified:false},message:'Undo: '+titleOf(id)});
-  else if(act==='cstate'){const s=b.dataset.s;const patch={status:s};patch[s+'_at']=nowISO();enqueue({file:'outreach',id,patch,message:nameOf(id)+': '+s.replace('_',' ')});}
+  else if(act==='cstate'){const s=b.dataset.s;const patch={status:s};patch[s+'_at']=nowISO();enqueue({file:'outreach',id,patch,message:nameOf(id)+': '+s.replace('_',' ')});updateCreatorKeyState(id,s).catch(x=>setErr(x.message));}
+  else if(act==='keys'){const select=document.querySelector(`[data-key-count="${CSS.escape(id)}"]`);assignCreatorKeys(b,id,Number(select&&select.value||1)).catch(x=>setErr(x.message));}
 });
 $('creator-more').addEventListener('click',()=>{CREATOR_LIMIT+=5;renderCreators();});
 $('refresh').addEventListener('click',()=>{setErr('');refresh();});
@@ -285,16 +302,22 @@ $('save-discord').addEventListener('click',e=>{
 });
 $('forget').addEventListener('click',()=>{
   if(QUEUE.length&&!confirm('Some taps have not saved yet. Lock the app anyway?'))return;
-  LS.del('key');LS.del('queue');TOKEN='';QUEUE=[];RAW={};showGate();
+  forgetDeviceKey();LS.del('queue');TOKEN='';KEYS_KEY=null;KEYS_READY=false;QUEUE=[];RAW={};showGate();
 });
 
 /* ---------- unlock: a password opens vault.json, which holds the GitHub token ---------- */
 const b64ToBytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 const bytesToB64=u=>{let t='';u.forEach(c=>t+=String.fromCharCode(c));return btoa(t);};
+const DEVICE_DB='badshrooms-desk', DEVICE_STORE='private';
+function deviceDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DEVICE_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(DEVICE_STORE);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+async function deviceGet(k){try{const db=await deviceDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(DEVICE_STORE,'readonly'),r=tx.objectStore(DEVICE_STORE).get(k);r.onsuccess=()=>resolve(r.result||'');r.onerror=()=>reject(r.error);});}catch(e){return '';}}
+async function deviceSet(k,v){try{const db=await deviceDb();await new Promise((resolve,reject)=>{const tx=db.transaction(DEVICE_STORE,'readwrite');tx.objectStore(DEVICE_STORE).put(v,k);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}catch(e){}}
+async function deviceDel(k){try{const db=await deviceDb();await new Promise((resolve,reject)=>{const tx=db.transaction(DEVICE_STORE,'readwrite');tx.objectStore(DEVICE_STORE).delete(k);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}catch(e){}}
+async function rememberDeviceKey(k){LS.set('key',k);await deviceSet('vault-key',k);try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist();}catch(e){}}
+async function recalledDeviceKey(){return LS.get('key','')||await deviceGet('vault-key');}
+function forgetDeviceKey(){LS.del('key');deviceDel('vault-key');LS.del('vault');}
 async function getVault(){
-  const r=await fetch('vault.json',{cache:'no-store'});
-  if(!r.ok)throw new Error('vault');
-  return r.json();
+  try{const r=await fetch('vault.json',{cache:'no-store'});if(!r.ok)throw new Error('vault');const v=await r.json();LS.set('vault',v);return v;}catch(e){const cached=LS.get('vault',null);if(cached)return cached;throw e;}
 }
 async function openVault(v,key){
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(v.iv)},key,b64ToBytes(v.ct));
@@ -307,19 +330,28 @@ async function unlockWithPassword(pw){
   const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64ToBytes(v.salt),iterations:v.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},true,['decrypt']);
   const o=await openVault(v,key);
-  LS.set('key',bytesToB64(new Uint8Array(await crypto.subtle.exportKey('raw',key))));
+  await rememberDeviceKey(bytesToB64(new Uint8Array(await crypto.subtle.exportKey('raw',key))));
   TOKEN=o.token;
+  KEYS_KEY=await crypto.subtle.importKey('raw',b64ToBytes(o.keys_key),'AES-GCM',false,['encrypt','decrypt']);
 }
 async function unlockWithStoredKey(){
-  const k=LS.get('key','');if(!k)return false;
+  const k=await recalledDeviceKey();if(!k)return false;
   try{
     const key=await crypto.subtle.importKey('raw',b64ToBytes(k),'AES-GCM',false,['decrypt']);
-    TOKEN=(await openVault(await getVault(),key)).token;return true;
+    const o=await openVault(await getVault(),key);TOKEN=o.token;KEYS_KEY=await crypto.subtle.importKey('raw',b64ToBytes(o.keys_key),'AES-GCM',false,['encrypt','decrypt']);await rememberDeviceKey(k);return true;
   }catch(e){
-    // vault changed (new password) or unreadable: the stored key no longer opens it
-    LS.del('key');return false;
+    // A transient fetch uses the cached vault. Only a real decrypt mismatch forgets this phone.
+    if(e&&e.name==='OperationError')forgetDeviceKey();return false;
   }
 }
+
+async function decodeKeyPool(envelope){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(envelope.iv)},KEYS_KEY,b64ToBytes(envelope.ct));return JSON.parse(new TextDecoder().decode(pt));}
+async function encodeKeyPool(data){const iv=crypto.getRandomValues(new Uint8Array(12)),pt=new TextEncoder().encode(JSON.stringify(data)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},KEYS_KEY,pt);return {v:1,iv:bytesToB64(iv),ct:bytesToB64(new Uint8Array(ct))};}
+async function getKeyPool(){const r=await gh('GET','data/keys.enc.json');if(!r.ok)throw new ApiError(r.status,explain(r));const j=await r.json(),envelope=JSON.parse(b64ToStr(j.content||''));return {sha:j.sha,data:await decodeKeyPool(envelope)};}
+async function saveKeyPool(change,message){let status=0;for(let attempt=0;attempt<3;attempt++){const cur=await getKeyPool();change(cur.data);cur.data.updated_at=nowISO();const envelope=await encodeKeyPool(cur.data);const r=await gh('PUT','data/keys.enc.json',{message,content:strToB64(pretty(envelope)),sha:cur.sha,branch:'main'});if(r.ok){KEYS=cur.data;KEYS_READY=true;renderCreators();return;}status=r.status;if(status===409||status===422)continue;throw new ApiError(status,explain(r));}throw new ApiError(status,'The key pool kept changing. Try once more.');}
+async function copyPlain(btn,text){try{await navigator.clipboard.writeText(text);flash(btn,'Copied');}catch(e){setErr('The keys were assigned, but the browser blocked Copy. Tap Copy keys on the card.');}}
+async function assignCreatorKeys(btn,id,count){if(!KEYS_READY)throw new Error('Key pool is not loaded yet.');btn.disabled=true;try{let copied=[];await saveKeyPool(data=>{const existing=data.items.filter(k=>k.outreach_id===id&&k.status!=='available'&&k.status!=='revoked');const need=Math.max(0,count-existing.length),available=data.items.filter(k=>(k.status||'available')==='available');if(need>available.length)throw new Error(`Only ${available.length} keys are available.`);const c=OUT.find(x=>x.id===id);available.slice(0,need).forEach(k=>Object.assign(k,{status:'assigned',outreach_id:id,assigned_to:c?c.name:id,assigned_at:nowISO()}));copied=data.items.filter(k=>k.outreach_id===id&&k.status!=='available'&&k.status!=='revoked').map(k=>k.key);},`Assign ${count} key${count===1?'':'s'} to ${nameOf(id)}`);enqueue({file:'outreach',id,patch:{key_count:copied.length,keys_assigned_at:nowISO()},message:nameOf(id)+': keys assigned'});await copyPlain(btn,copied.join('\n'));}finally{btn.disabled=false;}}
+async function updateCreatorKeyState(id,state){if(!KEYS_READY)return;if(state==='sent')await saveKeyPool(data=>data.items.filter(k=>k.outreach_id===id&&k.status==='assigned').forEach(k=>{k.status='sent';k.sent_at=nowISO();}),`Mark ${nameOf(id)} keys sent`);else if(state==='pass')await saveKeyPool(data=>data.items.filter(k=>k.outreach_id===id&&k.status==='assigned').forEach(k=>{k.status='available';k.outreach_id=null;k.assigned_to=null;k.assigned_at=null;}),`Return unused ${nameOf(id)} keys`);}
 $('unlock-form').addEventListener('submit',async e=>{
   e.preventDefault();
   const er=$('setup-err'), pw=$('pw-input').value, btn=$('unlock-btn');

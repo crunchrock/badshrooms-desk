@@ -73,6 +73,13 @@ button.ok{background:var(--lime);color:var(--ink);border-color:var(--lime)}
 .creator{background:var(--navy);border:1px solid var(--edge);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .creator .who{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
 .creator .who b{font-family:var(--display);font-weight:400;font-size:19px}
+.keybar,.keypool,.keyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.keybar{justify-content:space-between;background:var(--navy);border:1px solid var(--edge);border-radius:6px;padding:10px 12px}
+.keypool{font-family:var(--mono);font-size:12px}
+.keypool b{font-size:17px;color:var(--lime)}
+.keyrow{padding-top:4px;border-top:1px solid var(--edge)}
+.keycount{font-family:var(--mono);font-size:12px;color:var(--lime)}
+select{font-family:var(--mono);font-size:14px;background:var(--ink);color:var(--fg);border:1px solid var(--edge);border-radius:4px;padding:7px 9px}
 .meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .state{font-family:var(--mono);font-size:12px;font-weight:600;padding:2px 8px;border-radius:3px;background:var(--navy-2);border:1px solid var(--edge)}
 .state.sent{background:var(--orange);color:var(--ink);border-color:var(--orange)}
