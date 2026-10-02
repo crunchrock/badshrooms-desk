@@ -112,12 +112,17 @@ details[open] summary{margin-bottom:10px}
 .donelist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .donelist li{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
 input[type=url]{font-family:var(--mono);font-size:15px;background:var(--ink);color:var(--fg);border:1px solid var(--edge);border-radius:4px;padding:9px 10px;flex:1 1 260px;min-width:0}
+.inbound-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.inbound-form label{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.inbound-form input{font-family:var(--mono);font-size:14px;background:var(--ink);color:var(--fg);border:1px solid var(--edge);border-radius:4px;padding:8px 9px;min-width:0}
+.inbound-form .row{grid-column:1/-1}
 @media (max-width:560px){
   body{font-size:16px}
   .wrap{padding-inline:12px}
   .counts .chip:nth-child(n+3){display:none}
   .task{padding:13px}
   .copytext{font-size:12.5px}
+  .inbound-form{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .statusbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}

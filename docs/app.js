@@ -203,7 +203,7 @@ function stamp(){const s=$('sync-stamp');if(!s)return;const q=QUEUE.length?`${QU
 
 function applyPatch(doc,op){
   if(op.id==null){Object.assign(doc,op.patch);return true;}
-  if(!doc[op.id])return false;
+  if(!doc[op.id]){if(op.create){doc[op.id]=Object.assign({},op.patch);return true;}return false;}
   Object.assign(doc[op.id],op.patch);return true;
 }
 const docsOf=o=>Object.keys(o||{}).map(id=>Object.assign({id},o[id]));
@@ -293,6 +293,13 @@ document.addEventListener('click',e=>{
   else if(act==='keys'){const select=document.querySelector(`[data-key-count="${CSS.escape(id)}"]`);assignCreatorKeys(b,id,Number(select&&select.value||1)).catch(x=>setErr(x.message));}
 });
 $('creator-more').addEventListener('click',()=>{CREATOR_LIMIT+=5;renderCreators();});
+$('add-inbound').addEventListener('click',()=>{
+  const name=$('inbound-name').value.trim(), handle=$('inbound-handle').value.trim(), platform=$('inbound-platform').value, route=$('inbound-route').value.trim(), status=$('inbound-status');
+  if(!name){status.textContent='Add a name first.';return;}
+  const slug=(handle||name).toLowerCase().replace(/^@/,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'creator', id='inbound-'+slug+'-'+Date.now().toString(36);
+  enqueue({file:'outreach',id,create:true,patch:{name,platform,handle,url:'',followers:'',email:platform==='Email'?route:'',route,tier:'inbound',rank:0,hook:'',recent_title:'',recent_url:'',recent_date:'',why:'Inbound DM',status:'to_send',sent_at:null,replied_at:null,posted_at:null,note:'Added from the Command Center',created:nowISO()},message:'Add inbound creator: '+name});
+  $('inbound-name').value='';$('inbound-handle').value='';$('inbound-route').value='';status.textContent='Added. Their card is first in To send.';FILTER='to_send';CREATOR_LIMIT=5;renderCreators();
+});
 $('refresh').addEventListener('click',()=>{setErr('');refresh();});
 $('save-discord').addEventListener('click',e=>{
   const val=$('discord-invite').value.trim(), st=$('discord-status');

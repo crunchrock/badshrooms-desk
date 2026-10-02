@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261001-4">
+<link rel="stylesheet" href="styles.css?v=20261002-1">
 </head>
 <body>
 <div class="setup" id="setup" hidden>
@@ -90,6 +90,16 @@
   <h2>Pitch five</h2>
   <p>Open the channel, make sure the first line is still true, assign up to eight alpha keys, copy the message, send it, then press Sent.</p>
   <div class="keybar"><div class="keypool" id="key-pool"><span>Key pool loads here.</span></div><a id="key-sheet" href="#" target="_blank" rel="noopener">Paste new keys</a></div>
+  <details class="inbound-box">
+    <summary>Add someone who DMed you</summary>
+    <div class="inbound-form">
+      <label>Name<input type="text" id="inbound-name" autocomplete="off"></label>
+      <label>Handle<input type="text" id="inbound-handle" placeholder="@handle" autocomplete="off"></label>
+      <label>Platform<select id="inbound-platform"><option>Discord</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Twitch</option><option>X</option><option>Email</option><option>Other</option></select></label>
+      <label>DM route or email<input type="text" id="inbound-route" autocomplete="off"></label>
+      <div class="row"><button type="button" id="add-inbound">Add to creators</button><span class="meta" id="inbound-status"></span></div>
+    </div>
+  </details>
   <div class="filters" id="filters">
     <button type="button" data-f="to_send" aria-pressed="true">To send</button>
     <button type="button" data-f="sent" aria-pressed="false">Sent</button>
