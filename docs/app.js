@@ -111,7 +111,7 @@ function creatorCard(c){
       ${hasEmail?`<button class="copy" data-copy="ce-${id}" type="button">Copy address</button><button class="copy" data-copy="cm-${id}" type="button">Copy email</button>`:(route?`<button class="copy" data-copy="ce-${id}" type="button">Copy route</button>`:'')}
     </div>
     <div class="keyrow">
-      ${keyCount?`<span class="keycount">${keyCount} key${keyCount===1?'':'s'} assigned</span><button class="copy" data-copy="ck-${id}" type="button">Copy keys</button>`:`<label class="meta" for="kn-${id}">Alpha keys</label><select id="kn-${id}" data-key-count="${id}" aria-label="Keys to assign">${Array.from({length:8},(_,i)=>`<option value="${i+1}"${i===3?' selected':''}>${i+1}</option>`).join('')}</select><button type="button" data-act="keys" data-id="${id}">Assign + copy</button>`}
+      ${keyCount?`<span class="keycount">${keyCount} key${keyCount===1?'':'s'} assigned</span><button class="copy" data-copy="ck-${id}" type="button">Copy keys</button>${keyCount<8?`<label class="meta" for="kn-${id}">Total</label><select id="kn-${id}" data-key-count="${id}" aria-label="Total keys to assign">${Array.from({length:8-keyCount},(_,i)=>`<option value="${keyCount+i+1}">${keyCount+i+1}</option>`).join('')}</select><button type="button" data-act="keys" data-id="${id}">Add + copy</button>`:''}`:`<label class="meta" for="kn-${id}">Alpha keys</label><select id="kn-${id}" data-key-count="${id}" aria-label="Keys to assign">${Array.from({length:8},(_,i)=>`<option value="${i+1}"${i===3?' selected':''}>${i+1}</option>`).join('')}</select><button type="button" data-act="keys" data-id="${id}">Assign + copy</button>`}
     </div>
     <div class="row">
       <button type="button" data-act="cstate" data-id="${id}" data-s="sent">Sent</button>
