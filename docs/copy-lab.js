@@ -15,8 +15,10 @@ function copyBuffer(c){
 function copyWarnings(c,text,conflict){
   const source=c.orphan?'Missing from the latest source export.':c.stale?'Game source changed. Compare it with your candidate before saving.':c.source_orphan?'The Green Room has not resolved an active callsite.':'';
   const blocked=c.swappable?'':c.blocked_reason||'This row can be reviewed here; applying a replacement requires a source-code change.';
-  return [source,blocked,copyValidation(c,text),conflict?'This device has an older draft. Review both versions before choosing which to save.':''].filter(Boolean).join(' ');
+  const frozen=c.frozen?'Frozen by lore. Automatic sync and approved export skip this row; an owner-approved source change is required.':'';
+  return [source,blocked,frozen,copyValidation(c,text),conflict?'This device has an older draft. Review both versions before choosing which to save.':''].filter(Boolean).join(' ');
 }
+function copyExportable(c){return c.swappable&&!c.frozen&&!c.orphan&&!c.source_orphan&&!c.stale&&!copyValidation(c,copyCandidate(c));}
 function renderCopy(){
   const el=$('copy-list');if(!el)return;
   const q=COPY_SEARCH.trim().toLowerCase(),state=c=>c.orphan||c.source_orphan?'orphan':c.stale?'stale':c.status||'unreviewed';
@@ -24,7 +26,7 @@ function renderCopy(){
     .sort((a,b)=>String(a.group||'').localeCompare(String(b.group||''))||a.id.localeCompare(b.id,undefined,{numeric:true}));
   const count=s=>COPY.filter(c=>state(c)===s).length,blocked=COPY.filter(c=>!c.swappable).length;
   const hub=$('hub-copy-status');if(hub)hub.textContent=COPY.length?COPY.length+' lines and labels; '+count('draft')+' drafts; '+count('approved')+' approved':'Waiting for the first Green Room export.';
-  $('copy-counts').textContent=`${COPY.length} entries; ${count('draft')} drafts; ${count('approved')} approved; ${count('applied')} match game source; ${blocked} require source changes.`;
+  $('copy-counts').textContent=`${COPY.length} entries; ${count('draft')} drafts; ${count('approved')} approved; ${count('applied')} match game source; ${blocked} read-only; ${COPY.filter(c=>c.frozen).length} frozen; ${count('orphan')} missing or unresolved.`;
   el.innerHTML=rows.length?rows.slice(0,COPY_LIMIT).map(c=>{
     const b=copyBuffer(c),saved=copyCandidate(c),candidate=b?b.text:saved,dirty=candidate!==saved,conflict=!!b&&b.base!==copyVersion(c);
     const warning=copyValidation(c,candidate),sourceIssue=c.orphan?'Missing from the latest source export.':c.stale?'Game source changed. Compare it with your candidate before saving.':c.source_orphan?'The Green Room has not resolved an active callsite.':'';
@@ -32,6 +34,7 @@ function renderCopy(){
       <div class="copy-entry-head"><div><span class="kind">${esc(c.group||'Unsorted')}</span><h3>${esc(c.id)}</h3></div><span class="state ${esc(c.status||'unreviewed')}">${esc(state(c))}</span></div>
       <p class="copy-context">${esc(c.context||'No trigger context in source export.')}</p>
       <p class="meta">${esc(c.source_ref||'Source path unavailable')}</p>
+      <p class="meta">${c.swappable?'Writable asset text':'Read-only · source change required'}${c.frozen?' · Frozen by lore':''}${c.orphan?' · Missing source':c.source_orphan?' · Unresolved callsite':''}</p>
       <details class="copy-source" ${sourceIssue||conflict?'open':''}><summary>Current game text</summary><pre>${esc(c.source_text||'')}</pre></details>
       ${conflict?`<details class="copy-source" open><summary>Candidate saved on another device</summary><pre>${esc(saved)}</pre></details>`:''}
       <label class="copy-editor-label">Jim's candidate<textarea data-copy-candidate="${esc(c.id)}" rows="3" spellcheck="true">${esc(candidate)}</textarea></label>
@@ -122,7 +125,7 @@ async function saveCopyEntry(id,patch,expected,suppressHistory=false){
   }throw new Error('Copy data kept changing. Your draft stays on this device; refresh before retrying.');
 }
 function buildApprovedCopyTsv(rows){
-  const reviewed=rows.filter(c=>c.status==='approved'&&!c.stale&&!c.orphan),approved=reviewed.filter(c=>c.swappable&&!copyValidation(c,copyCandidate(c)));
+  const reviewed=rows.filter(c=>c.status==='approved'&&!c.stale&&!c.orphan),approved=reviewed.filter(copyExportable);
   const lines=['id\tcurrent\treplacement\tverdict\toperation\tencoding'];
   approved.sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true})).forEach(c=>{const changed=copyCandidate(c)!==c.source_text;lines.push([c.id,c.source_text,changed?copyCandidate(c):'',changed?'Replace':'Keep',changed?'replace':'keep','escaped-v2'].map(copyTsvCell).join('\t'));});
   return {text:lines.join('\n')+'\n',count:approved.length,blocked:reviewed.length-approved.length};

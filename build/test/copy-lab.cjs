@@ -63,6 +63,12 @@ let count=0;const test=async(name,fn)=>{await fn();console.log(`ok ${++count} - 
     const rows=[a,{...record('line/STALE#0'),status:'approved',stale:true},{...record('line/BLOCKED#0'),status:'approved',swappable:false},{...record('line/ORPHAN#0'),status:'approved',orphan:true},record('line/DRAFT#0')];
     const out=call('buildApprovedCopyTsv(rows)',{rows});assert.equal(out.count,1);assert.equal(out.blocked,1);assert.ok(out.text.includes('Clear me\t\tReplace\treplace\tescaped-v2'));
   });
+  await test('frozen and unresolved-callsite approvals are excluded and explained',()=>{
+    const frozen={...record('line/FROZEN#0'),status:'approved',frozen:true},unresolved={...record('line/UNRESOLVED#0'),status:'approved',source_orphan:true};
+    const out=call('buildApprovedCopyTsv(rows)',{rows:[frozen,unresolved]});assert.equal(out.count,0);assert.equal(out.blocked,2);
+    assert.match(call('copyWarnings(c,copyCandidate(c),false)',{c:frozen}),/Frozen by lore/);
+    assert.match(call('copyWarnings(c,copyCandidate(c),false)',{c:unresolved}),/active callsite/);
+  });
   await test('unrelated concurrent save is retained across SHA retry',async()=>{
     const a=record(),b=record('line/OTHER#0'),s=backend({[a.id]:a,[b.id]:b},{conflict:d=>({...d,[b.id]:{...b,candidate_text:'Other edit {name}.',revision:'r2'}})});
     await call('saveCopyEntry(id,patch,"r1")',{id:a.id,patch:{candidate_text:'New candidate {name}.',status:'approved'}});

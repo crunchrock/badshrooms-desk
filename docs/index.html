@@ -9,12 +9,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Command">
-<link rel="manifest" href="manifest.webmanifest?v=20261006-hub1">
+<link rel="manifest" href="manifest.webmanifest?v=20261006-copy-sync">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261006-hub1">
+<link rel="stylesheet" href="styles.css?v=20261006-copy-sync">
 </head>
 <body>
 <div class="setup" id="setup" hidden>
@@ -140,7 +140,7 @@
 <section id="copy" data-panel="copy" hidden>
   <p class="eyebrow">GAME COPY</p>
   <h2>Copy Lab</h2>
-  <p>Import the latest editable TSV from The Green Room. Edit and approve wording here, then export approved rows and apply them in Unity. Nothing here publishes to Steam.</p>
+  <p>Edit and approve wording here, then choose Sync approved copy in Unity's Green Room before the next build. Import/export remains available for manual source review. Nothing here publishes to Steam.</p>
   <div class="copy-tools">
     <label class="upload-btn">Import Green Room TSV<input id="copy-import" type="file" accept=".tsv,text/tab-separated-values,text/plain"></label>
     <button type="button" id="copy-export">Export approved TSV</button>
@@ -151,7 +151,7 @@
   <div class="copy-filters">
     <input type="search" id="copy-search" placeholder="Search text, ID, group, or context" aria-label="Search game copy">
     <select id="copy-status" aria-label="Filter by review state">
-      <option value="all">All states</option><option value="unreviewed">Unreviewed</option><option value="draft">Draft</option><option value="approved">Approved</option><option value="applied">Applied</option><option value="stale">Needs refresh</option><option value="orphan">Missing from source</option>
+      <option value="all">All states</option><option value="unreviewed">Unreviewed</option><option value="draft">Draft</option><option value="approved">Approved</option><option value="applied">Applied</option><option value="stale">Needs refresh</option><option value="orphan">Missing or unresolved</option>
     </select>
   </div>
   <div id="copy-list" class="copy-list"><div class="empty">Import a Green Room TSV to start the copy ledger.</div></div>
@@ -230,12 +230,12 @@ hello@crunchrock.games</pre><button class="copy" data-copy="tpl-email" type="but
 </main>
 </div>
 <details class="release-bar" id="app-updates">
-  <summary id="app-version">Version 2026.10.06.1 · Updates</summary>
+  <summary id="app-version">Version 2026.10.06.2 · Updates</summary>
   <div class="row"><button type="button" id="check-update">Check for updates</button><button type="button" id="reload-app">Reload app</button></div>
   <p class="meta" id="update-status" role="status"></p>
 </details>
-<script src="command-center.js?v=20261006-hub1"></script>
-<script src="copy-lab.js?v=20261006-hub1"></script>
-<script src="app.js?v=20261006-hub1"></script>
+<script src="command-center.js?v=20261006-copy-sync"></script>
+<script src="copy-lab.js?v=20261006-copy-sync"></script>
+<script src="app.js?v=20261006-copy-sync"></script>
 </body>
 </html>

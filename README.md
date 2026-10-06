@@ -35,12 +35,22 @@ separate. Google Docs/Sheets are not synchronized by this app.
 3. Search by wording, stable ID, group or trigger. Edit **Jim's candidate**, then **Save draft**
    or **Approve wording**. Text typed without a successful save stays on that device. Refresh
    compares concurrent edits and offers an explicit choice rather than overwriting them.
-4. Choose **Export approved TSV**. Only approved, current, writable rows are included.
-   Hardcoded and frozen rows remain available for review and disclose why application is blocked.
-5. With Unity out of Play Mode, use **Apply TSV and save assets** in The Green Room. The importer
-   checks every source baseline and placeholder before changing any assets.
-6. Export a fresh full TSV from Unity and import it into Copy Lab. A matching approved candidate
-   is then verified as applied. Review approval and source application do not publish a game build.
+4. With this candidate open in a stopped Unity Editor, choose **Sync approved copy** in The
+   Green Room, or run `node tools/copy-sync.cjs` from the Unity repo. It pulls approved rows,
+   checks fresh native source, applies supported assets and verifies the same unchanged app
+   approvals as applied. No recurring export/import file shuffling is required.
+5. Desktop sync uses the desk checkout's existing ignored `build/secret.json`; it creates no
+   credentials or service. A token held only on the phone is unavailable to desktop Unity.
+   Manual **Export approved TSV** and **Apply TSV and save assets** remain the fallback; then
+   reimport a full source TSV to confirm application.
+
+Read-only, lore-frozen and missing or unresolved-callsite rows stay reviewable and are labelled.
+Automatic sync and approved export skip them. The generic manual native importer has no extra
+lore approval gate. Coverage is the harvested provider set, not a claim of every visible word.
+Sync preserves candidates/history and skips drafts. Changed source or changed approvals stop
+application; newer app revisions after import remain untouched and unacknowledged. Network or
+SHA failures can leave saved game assets awaiting acknowledgement: retry the explicit sync.
+Changes enter the next candidate build. No approval or sync publishes a game or Steam update.
 
 Run synthetic persistence checks with `node build/test/copy-lab.cjs`. Run the actual UI against a
 local mock API with `node build/test/copy-lab-ui.cjs` and Playwright installed (`PLAYWRIGHT_PATH`

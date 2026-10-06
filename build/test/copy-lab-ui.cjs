@@ -14,7 +14,7 @@ const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/\r/g,'\\r').replace(/\n/g,
 const header='id\tcurrent\treplacement\tverdict\tkind\tgroup\tcontext\tswappable\tsource\tblocked_reason\torphan\tfrozen\toperation\tencoding';
 const source=header+'\n'+Array.from({length:31},(_,i)=>[
   `line/FIXTURE_${String(i).padStart(3,'0')}#0`,'Original <b>{name}</b>.','','','Line','Fixture group','Synthetic fixture trigger; never game copy.',i===30?'false':'true',
-  'Assets/Fixture.asset | Assets/SyntheticCallsite.cs',i===30?'Hardcoded fixture: requires a source change.':'','false','false','','escaped-v2'
+  'Assets/Fixture.asset | Assets/SyntheticCallsite.cs',i===30?'Hardcoded fixture: requires a source change.':'',i===30?'true':'false',i===30?'true':'false','','escaped-v2'
 ].map(esc).join('\t')).join('\n')+'\n';
 const id='line/FIXTURE_000#0';let ledger=null,sha=1,failPut=false,delayPut=false,writes=0,metadataOnly=false,rawReads=0,heldRead=null;
 const errors=[];let browser;
@@ -51,6 +51,11 @@ async function start(page,url){
   await page.locator('#copy-import').setInputFiles({name:'fixture.tsv',mimeType:'text/tab-separated-values',buffer:Buffer.from(source)});
   await page.waitForFunction(()=>COPY.length===31);assert.equal(await page.locator('.copy-entry').count(),25);
   await page.locator('#copy-more').click();assert.equal(await page.locator('.copy-entry').count(),31);
+  await page.locator('#copy-search').fill('FIXTURE_030');
+  assert.match(await page.locator('.copy-entry').innerText(),/Read-only.*Frozen by lore.*Unresolved callsite/s);
+  assert.match(await page.locator('.copy-validation').innerText(),/Automatic sync and approved export skip this row/);
+  assert.match(await page.locator('#copy-counts').innerText(),/1 read-only; 1 frozen; 1 missing or unresolved/);
+  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(out,'mobile-coverage-limits.png'),fullPage:true});
   await page.locator('#copy-search').fill('FIXTURE_000');assert.equal(await page.locator('.copy-entry').count(),1);
   const field=page.locator('[data-copy-candidate]').first(),draft=page.locator('[data-copy-act="draft"]').first(),approve=page.locator('[data-copy-act="approve"]').first();
   await field.fill('Candidate <b>{name}</b>.');assert.ok((await page.locator('.copy-save-status').innerText()).includes('not synced'));

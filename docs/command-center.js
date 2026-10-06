@@ -1,5 +1,5 @@
 /* Same origin and shortcut path: reload preserves the desk's device storage. */
-const COMMAND_CENTER_VERSION='2026.10.06.1';
+const COMMAND_CENTER_VERSION='2026.10.06.2';
 let COMMAND_CENTER_LATEST=COMMAND_CENTER_VERSION;
 function commandCenterReloadUrl(version=COMMAND_CENTER_LATEST){
   const url=new URL(location.href);url.searchParams.set('release',version);url.searchParams.set('_reload',Date.now());return url.href;

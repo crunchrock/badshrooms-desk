@@ -5,7 +5,9 @@ const root=path.join(__dirname,'../..'),out=path.join(root,'../qa/command-center
 const assetRoot=process.env.ASSET_ROOT||path.join(root,'docs');
 const baseline=process.env.BASELINE_PATH||path.join(root,'../qa/live-entry');
 const allowed=new Set(['index.html','app.js','copy-lab.js','command-center.js','version.json','styles.css','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png']);
-let version='2026.10.06.1',versionFails=false,writes=0,checks=0;const errors=[];
+const currentVersion=JSON.parse(fs.readFileSync(path.join(assetRoot,'version.json'),'utf8')).version;
+const nextVersion=currentVersion.replace(/\d+$/,n=>String(Number(n)+1));
+let version=currentVersion,versionFails=false,writes=0,checks=0;const errors=[];
 const server=http.createServer((req,res)=>{
   const u=new URL(req.url,'http://localhost'),before=u.pathname.startsWith('/before/');
   const name=(before?u.pathname.slice(8):u.pathname.slice(1))||'index.html';
@@ -44,7 +46,7 @@ async function open(page,url){
   }
   await open(page,url);assert.equal(await page.locator('#home').isVisible(),true);assert.equal(await page.locator('#today').isVisible(),false);
   assert.equal(await page.locator('.app-card').count(),2);assert.equal(await page.locator('.app-nav a[aria-current="page"]').innerText(),'Home');
-  assert.ok((await page.locator('#app-version').innerText()).includes('2026.10.06.1'));
+  assert.ok((await page.locator('#app-version').innerText()).includes(currentVersion));
   await page.screenshot({path:path.join(out,'hub-mobile.png'),fullPage:true});
   await page.locator('.app-card[href="#today"]').click();await page.waitForFunction(()=>!document.getElementById('today').hidden);
   assert.equal(await page.locator('[aria-label="Marketing views"]').isVisible(),true);assert.equal(await page.locator('.task').filter({hasText:'Fixture marketing task'}).count(),1);
@@ -61,12 +63,12 @@ async function open(page,url){
   await page.evaluate(({draft,queue})=>{localStorage.setItem('bsd.copy-drafts',JSON.stringify(draft));localStorage.setItem('bsd.queue',JSON.stringify(queue));localStorage.setItem('bsd.key',btoa(String.fromCharCode(...new Uint8Array(32))));},{draft,queue});
   await page.locator('#app-updates summary').click();
   await page.locator('#check-update').click();await page.waitForFunction(()=>document.getElementById('update-status').textContent.includes('current version'));
-  version='2026.10.06.2';await page.locator('#check-update').click();await page.waitForFunction(()=>document.getElementById('reload-app').textContent==='Reload update');
+  version=nextVersion;await page.locator('#check-update').click();await page.waitForFunction(()=>document.getElementById('reload-app').textContent==='Reload update');
   assert.ok((await page.locator('#update-status').innerText()).includes(version));versionFails=true;
   await page.locator('#check-update').click();await page.waitForFunction(()=>document.getElementById('update-status').textContent.includes('Could not check'));versionFails=false;
   await page.evaluate(()=>{ACTIVE_WRITES=1;});const previous=page.url();await page.locator('#reload-app').click();assert.equal(page.url(),previous);assert.ok((await page.locator('#update-status').innerText()).includes('save is still running'));await page.evaluate(()=>{ACTIVE_WRITES=0;});
   await page.locator('.app-nav [data-app="copy"]').click();await page.waitForFunction(()=>location.hash==='#copy');
-  await Promise.all([page.waitForURL(u=>u.searchParams.get('release')==='2026.10.06.2'),page.locator('#reload-app').click()]);
+  await Promise.all([page.waitForURL(u=>u.searchParams.get('release')===nextVersion),page.locator('#reload-app').click()]);
   assert.equal(new URL(page.url()).pathname,'/');assert.equal(new URL(page.url()).hash,'#copy');assert.ok(new URL(page.url()).searchParams.get('_reload'));
   const kept=await page.evaluate(()=>({draft:JSON.parse(localStorage.getItem('bsd.copy-drafts')),queue:JSON.parse(localStorage.getItem('bsd.queue')),key:localStorage.getItem('bsd.key')}));
   assert.deepEqual(kept.draft,draft);assert.deepEqual(kept.queue,queue);assert.ok(kept.key);
