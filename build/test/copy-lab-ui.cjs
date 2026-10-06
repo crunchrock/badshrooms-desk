@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const playwright=require(process.env.PLAYWRIGHT_PATH||'playwright');
 const root=path.join(__dirname,'../..'),out=path.join(root,'../qa/copy-lab');fs.mkdirSync(out,{recursive:true});
-const allowed=new Set(['index.html','app.js','copy-lab.js','styles.css','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png']);
+const allowed=new Set(['index.html','app.js','copy-lab.js','command-center.js','version.json','styles.css','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png']);
 const server=http.createServer((req,res)=>{
   const name=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
   if(!allowed.has(name)){res.writeHead(404);res.end();return;}

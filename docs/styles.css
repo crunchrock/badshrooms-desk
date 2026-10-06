@@ -31,7 +31,20 @@ section{display:flex;flex-direction:column;gap:14px}
 .eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--lime)}
 .section-head{display:flex;justify-content:space-between;align-items:end;gap:12px}
 .focus-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.tabs{position:sticky;top:max(0px,env(safe-area-inset-top));z-index:5;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px;background:rgba(7,16,18,.96);border:1px solid var(--edge);border-radius:8px;backdrop-filter:blur(10px)}
+.app-nav{position:sticky;top:max(0px,env(safe-area-inset-top));z-index:5;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;background:var(--ink);border:1px solid var(--edge);border-radius:8px}
+.app-nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;border-radius:5px}
+.app-nav a span{font-size:11px;font-weight:400}
+.app-nav a[aria-current=page]{background:var(--lime);color:var(--ink)}
+.app-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.app-card{display:flex;flex-direction:column;gap:12px;padding:20px;background:var(--navy);border:1px solid var(--edge);border-radius:8px;color:var(--fg);text-decoration:none}
+.app-card h3{font-size:25px}
+.app-card:hover{border-color:var(--lime)}
+.app-card-action{color:var(--lime);font-family:var(--mono);font-size:14px;font-weight:600;margin-top:auto;padding-top:8px}
+.release-bar{margin:0;padding:4px 12px;background:var(--navy);border:1px solid var(--edge);border-radius:6px}
+.release-bar summary{font-family:var(--mono);font-size:12px;color:var(--muted);min-height:44px;align-content:center;cursor:pointer}
+.release-bar .row,.release-bar p{margin-block:10px}
+.release-bar button{min-height:44px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px;background:rgba(7,16,18,.96);border:1px solid var(--edge);border-radius:8px}
 .tabs button{padding:10px 6px;background:transparent;border-color:transparent;color:var(--muted)}
 .tabs button[aria-pressed="true"]{background:var(--lime);color:var(--ink);border-color:var(--lime)}
 .counts{display:flex;flex-wrap:wrap;gap:8px}
@@ -143,6 +156,9 @@ input[type=url]{font-family:var(--mono);font-size:15px;background:var(--ink);col
   .copytext{font-size:12.5px}
   .inbound-form{grid-template-columns:1fr}
   .tabs{gap:2px;padding:5px}
+  .app-grid{grid-template-columns:1fr}
+  .app-nav a{font-size:13px}
+  .app-card{padding:16px}
   .tabs button{font-size:11px;padding:9px 3px;min-height:44px}
   .copy-entry{padding:11px}
   .copy-editor-label textarea,.copy-filters input,.copy-filters select{font-size:16px}

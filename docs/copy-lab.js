@@ -23,6 +23,7 @@ function renderCopy(){
   const rows=COPY.filter(c=>(COPY_FILTER==='all'||state(c)===COPY_FILTER)&&(!q||[c.id,c.group,c.context,c.source_text,copyCandidate(c),c.source_ref].some(v=>String(v||'').toLowerCase().includes(q))))
     .sort((a,b)=>String(a.group||'').localeCompare(String(b.group||''))||a.id.localeCompare(b.id,undefined,{numeric:true}));
   const count=s=>COPY.filter(c=>state(c)===s).length,blocked=COPY.filter(c=>!c.swappable).length;
+  const hub=$('hub-copy-status');if(hub)hub.textContent=COPY.length?COPY.length+' lines and labels; '+count('draft')+' drafts; '+count('approved')+' approved':'Waiting for the first Green Room export.';
   $('copy-counts').textContent=`${COPY.length} entries; ${count('draft')} drafts; ${count('approved')} approved; ${count('applied')} match game source; ${blocked} require source changes.`;
   el.innerHTML=rows.length?rows.slice(0,COPY_LIMIT).map(c=>{
     const b=copyBuffer(c),saved=copyCandidate(c),candidate=b?b.text:saved,dirty=candidate!==saved,conflict=!!b&&b.base!==copyVersion(c);

@@ -2,24 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bad Shrooms Marketing Desk</title>
+<title>Bad Shrooms Command Center</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#071012">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Desk">
-<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Command">
+<link rel="manifest" href="manifest.webmanifest?v=20261006-hub1">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261005-copylab">
+<link rel="stylesheet" href="styles.css?v=20261006-hub1">
 </head>
 <body>
 <div class="setup" id="setup" hidden>
-  <h1>Bad Shrooms Marketing Desk</h1>
-  <p class="lede">Password, please.</p>
+  <p class="eyebrow">BAD SHROOMS</p>
+  <h1>Command Center</h1>
+  <p class="lede">Unlock Marketing and Copy Lab.</p>
   <form class="row" id="unlock-form">
     <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" autocapitalize="off" spellcheck="false" aria-label="Password">
     <button type="submit" id="unlock-btn">Unlock</button>
@@ -31,23 +32,47 @@
 <header class="app-head">
   <div>
     <p class="eyebrow">BAD SHROOMS</p>
-    <h1>Marketing desk</h1>
-    <p class="lede">Do the next thing. Everything else can wait.</p>
+    <h1>Command Center</h1>
+    <p class="lede">Marketing and game copy, in one place.</p>
   </div>
-  <div class="counts" id="counts"><span class="chip">Loading…</span></div>
+  <div class="counts" id="counts" data-marketing-only hidden><span class="chip">Loading…</span></div>
   <div class="statusbar"><button type="button" id="refresh">Refresh</button><span class="meta" id="sync-stamp"></span></div>
   <p class="errline" id="err" role="status" hidden></p>
 </header>
 
-<nav class="tabs" aria-label="Desk views">
+<nav class="app-nav" aria-label="Command Center apps">
+  <a href="#home" data-app="home">Home</a>
+  <a href="#today" data-app="marketing">Marketing</a>
+  <a href="#copy" data-app="copy">Copy Lab<span>Green Room</span></a>
+</nav>
+
+<nav class="tabs" aria-label="Marketing views" data-marketing-only hidden>
   <button type="button" data-view="today" aria-pressed="true">Do now</button>
   <button type="button" data-view="numbers" aria-pressed="false">Numbers</button>
   <button type="button" data-view="creators" aria-pressed="false">Creators</button>
-  <button type="button" data-view="copy" aria-pressed="false">Copy Lab</button>
   <button type="button" data-view="more" aria-pressed="false">More</button>
 </nav>
 
 <main>
+<section id="home" data-panel="home">
+  <p class="eyebrow">YOUR APPS</p>
+  <h2>Open an app</h2>
+  <div class="app-grid">
+    <a class="app-card" href="#today">
+      <span class="eyebrow">MARKETING</span><h3>Marketing desk</h3>
+      <p>Today's work, live numbers, creators and alpha key handoffs.</p>
+      <span class="meta" id="hub-marketing-status">Your existing desk and records.</span>
+      <span class="app-card-action">Open Marketing</span>
+    </a>
+    <a class="app-card" href="#copy">
+      <span class="eyebrow">GAME COPY</span><h3>Copy Lab / Green Room</h3>
+      <p>Review wording by line and trigger. Save drafts and approve changes for Unity's Green Room.</p>
+      <span class="meta" id="hub-copy-status">Import a Green Room TSV to begin.</span>
+      <span class="app-card-action">Open Copy Lab</span>
+    </a>
+  </div>
+</section>
+
 <section id="today" data-panel="today">
   <div class="section-head"><div><p class="eyebrow">TODAY</p><h2>Do now</h2></div><span class="focus-count" id="focus-count"></span></div>
   <p>Finish these before opening the backlog.</p>
@@ -204,7 +229,13 @@ hello@crunchrock.games</pre><button class="copy" data-copy="tpl-email" type="but
 </section>
 </main>
 </div>
-<script src="copy-lab.js?v=20261005-copylab"></script>
-<script src="app.js?v=20261005-copylab"></script>
+<details class="release-bar" id="app-updates">
+  <summary id="app-version">Version 2026.10.06.1 · Updates</summary>
+  <div class="row"><button type="button" id="check-update">Check for updates</button><button type="button" id="reload-app">Reload app</button></div>
+  <p class="meta" id="update-status" role="status"></p>
+</details>
+<script src="command-center.js?v=20261006-hub1"></script>
+<script src="copy-lab.js?v=20261006-hub1"></script>
+<script src="app.js?v=20261006-hub1"></script>
 </body>
 </html>

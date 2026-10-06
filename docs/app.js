@@ -142,12 +142,17 @@ function renderCounts(){
   const done=TASKS.filter(t=>t.status==='done').length;
   const by=s=>OUT.filter(c=>(c.status||'to_send')===s).length;
   document.getElementById('counts').innerHTML=`<span class="chip you">${focus||Math.min(mine,4)} do now</span><span class="chip">${mine} total open</span><span class="chip">${by('sent')} pitched</span><span class="chip">${by('replied')} replied</span>`;
+  const hub=document.getElementById('hub-marketing-status');if(hub)hub.textContent=mine+' open tasks';
 }
 
 function setView(name){
-  if(!['today','numbers','creators','copy','more'].includes(name))name='today';
+  if(name==='marketing')name='today';
+  if(!['home','today','numbers','creators','copy','more'].includes(name))name='home';
+  const app=name==='home'?'home':name==='copy'?'copy':'marketing';
   document.querySelectorAll('[data-panel]').forEach(p=>{p.hidden=p.dataset.panel!==name;});
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
+  document.querySelectorAll('[data-marketing-only]').forEach(el=>{el.hidden=app!=='marketing';});
+  document.querySelectorAll('[data-app]').forEach(el=>{if(el.dataset.app===app)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
   try{history.replaceState(null,'','#'+name);}catch(e){}
   window.scrollTo(0,0);
 }
@@ -172,7 +177,7 @@ COPY_BUFFERS=LS.get('copy-drafts',{});
 let TOKEN='';
 let RAW={};                 // file name -> parsed JSON as last fetched
 let QUEUE=LS.get('queue',[]); // taps not yet saved: {file,id,patch,message}
-let flushing=false, refreshing=false, lastOk=0, COPY_WRITE_REVISION=0, COPY_READ_REVISION=0;
+let flushing=false, refreshing=false, lastOk=0, COPY_WRITE_REVISION=0, COPY_READ_REVISION=0, ACTIVE_WRITES=0;
 
 const $=id=>document.getElementById(id);
 const b64ToStr=b=>new TextDecoder().decode(Uint8Array.from(atob(String(b).replace(/\s/g,'')),c=>c.charCodeAt(0)));
@@ -181,10 +186,11 @@ const sortKeys=v=>Array.isArray(v)?v.map(sortKeys):(v&&typeof v==='object'?Objec
 const pretty=o=>JSON.stringify(sortKeys(o),null,1)+'\n';
 
 function gh(method,path,body,accept='application/vnd.github+json'){
+  const writing=method!=='GET';if(writing)ACTIVE_WRITES++;
   return fetch(`https://api.github.com/repos/${REPO}/contents/${path}`+(method==='GET'?'?ref=main':''),{
     method,cache:'no-store',body:body?JSON.stringify(body):undefined,
     headers:{Authorization:`Bearer ${TOKEN}`,Accept:accept,'X-GitHub-Api-Version':'2022-11-28'}
-  });
+  }).finally(()=>{if(writing)ACTIVE_WRITES--;});
 }
 class ApiError extends Error{constructor(status,msg){super(msg);this.status=status;}}
 function explain(r){
@@ -318,6 +324,7 @@ $('forget').addEventListener('click',()=>{
 });
 
 setupCopyLab();
+setupCommandCenter();
 
 /* ---------- unlock: a password opens vault.json, which holds the GitHub token ---------- */
 const b64ToBytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -383,9 +390,11 @@ $('unlock-form').addEventListener('submit',async e=>{
 function showGate(){
   const has=!!TOKEN;
   $('setup').hidden=has;$('app').hidden=!has;
+  const updates=$('app-updates');if(updates)(has?document.querySelector('#app .app-head'):$('setup')).appendChild(updates);
   if(has)refresh();
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 setInterval(()=>{if(document.visibilityState==='visible')refresh();},60000);
-setView(location.hash.slice(1)||'today');
+window.addEventListener('hashchange',()=>setView(location.hash.slice(1)||'home'));
+setView(location.hash.slice(1)||'home');
 (async()=>{await unlockWithStoredKey();showGate();})();

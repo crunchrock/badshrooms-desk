@@ -1,6 +1,6 @@
 {
-  "name": "Bad Shrooms Marketing Desk",
-  "short_name": "Desk",
+  "name": "Bad Shrooms Command Center",
+  "short_name": "Command",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

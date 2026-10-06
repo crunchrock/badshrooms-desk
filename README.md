@@ -6,6 +6,21 @@ Served from `/docs` on GitHub Pages: https://crunchrock.github.io/badshrooms-des
 
 Unlock: a password opens `docs/vault.json` (the GitHub token, encrypted with PBKDF2 and AES-GCM). To set or change it, put `{token, password}` in `build/secret.json` (ignored by git), run `node build/vault.mjs`, check with `node build/test/smoke.mjs`, commit `docs/vault.json` and push.
 
+## Navigation and updates
+
+The existing root URL opens **Home**, with separate **Marketing** and **Copy Lab / Green Room**
+entries. The app bar stays available in both apps. Existing `#today`, `#numbers`, `#creators`,
+`#more` and `#copy` links still work. The shortcut's `start_url` and scope remain `./`.
+
+The header's **Version / Updates** panel checks `version.json` with a fresh request. **Reload app**
+loads the same path with a cache-busting query, retains the active view, and leaves device drafts,
+queued taps and unlock storage intact. A running save blocks reload until it finishes. Release
+metadata, the loaded version constant and asset query versions change together. The app does not
+register a service worker or clear browser storage during updates.
+
+Run `node build/test/command-center-ui.cjs` for the local mock-API navigation/update checks.
+It supports the same Playwright and Chrome environment variables as the Copy Lab UI test.
+
 ## Copy Lab
 
 Copy Lab uses `data/copy.json` in the same private data repo. Each map key is an existing Green
