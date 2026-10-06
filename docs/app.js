@@ -6,7 +6,7 @@ function copyFrom(btn){
   const fallback=()=>{el.hidden=false;const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected, copy it';};
   try{navigator.clipboard.writeText(text).then(()=>flash(btn,'Copied'),fallback);}catch(e){fallback();}
 }
-let TASKS=[], OUT=[], DAYS=[], PULSE=null, KEYS={version:1,items:[]}, KEYS_KEY=null, KEYS_READY=false, FILTER='to_send', TASK_AREA='all', CREATOR_LIMIT=5;
+let TASKS=[], OUT=[], DAYS=[], PULSE=null, COPY=[], KEYS={version:1,items:[]}, KEYS_KEY=null, KEYS_READY=false, FILTER='to_send', TASK_AREA='all', CREATOR_LIMIT=5;
 const nowISO=()=>new Date().toISOString();
 const fmt=v=>v==null||v===''?'–':Number(v).toLocaleString('en-US');
 
@@ -145,7 +145,7 @@ function renderCounts(){
 }
 
 function setView(name){
-  if(!['today','numbers','creators','more'].includes(name))name='today';
+  if(!['today','numbers','creators','copy','more'].includes(name))name='today';
   document.querySelectorAll('[data-panel]').forEach(p=>{p.hidden=p.dataset.panel!==name;});
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
   try{history.replaceState(null,'','#'+name);}catch(e){}
@@ -159,18 +159,20 @@ function renderPosts(rows){
   rows=rows.slice().sort((a,b)=>String(b.posted_at||'').localeCompare(String(a.posted_at||'')));
   document.getElementById('post-body').innerHTML=rows.length?rows.map(p=>{const rate=p.views?((Number(p.likes)||0)/p.views*100).toFixed(1)+'%':'–';return `<tr><td class="num">${esc(String(p.posted_at||'').slice(5,16).replace('T',' '))}</td><td>${esc(p.account)}</td><td>${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.caption)}</a>`:esc(p.caption)}<br><span class="meta">${esc(p.format||'')}</span></td><td class="num">${fmt(p.views)}</td><td class="num">${fmt(p.likes)}</td><td class="num">${rate}</td><td class="num">${fmt(p.saves)}</td><td>${esc(p.verdict||'')}${p.fix?`<br><b>Next time:</b> ${esc(p.fix)}`:''}</td></tr>`;}).join(''):'<tr><td colspan="8"><div class="empty">No posts logged yet.</div></td></tr>';
 }
+
 /* ---------- data layer: the private repo crunchrock/badshrooms-desk-data through the GitHub contents API ---------- */
 const REPO='crunchrock/badshrooms-desk-data';
-const FILES=['tasks','outreach','days','guidance','posts','pulse','settings'];
+const FILES=['tasks','outreach','days','guidance','posts','pulse','settings','copy'];
 const LS={
   get(k,d){try{const v=localStorage.getItem('bsd.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
   set(k,v){try{localStorage.setItem('bsd.'+k,JSON.stringify(v));}catch(e){}},
   del(k){try{localStorage.removeItem('bsd.'+k);}catch(e){}}
 };
+COPY_BUFFERS=LS.get('copy-drafts',{});
 let TOKEN='';
 let RAW={};                 // file name -> parsed JSON as last fetched
 let QUEUE=LS.get('queue',[]); // taps not yet saved: {file,id,patch,message}
-let flushing=false, refreshing=false, lastOk=0;
+let flushing=false, refreshing=false, lastOk=0, COPY_WRITE_REVISION=0, COPY_READ_REVISION=0;
 
 const $=id=>document.getElementById(id);
 const b64ToStr=b=>new TextDecoder().decode(Uint8Array.from(atob(String(b).replace(/\s/g,'')),c=>c.charCodeAt(0)));
@@ -178,10 +180,10 @@ const strToB64=s=>{const u=new TextEncoder().encode(s);let t='';for(let i=0;i<u.
 const sortKeys=v=>Array.isArray(v)?v.map(sortKeys):(v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=sortKeys(v[k]),o),{}):v);
 const pretty=o=>JSON.stringify(sortKeys(o),null,1)+'\n';
 
-function gh(method,path,body){
+function gh(method,path,body,accept='application/vnd.github+json'){
   return fetch(`https://api.github.com/repos/${REPO}/contents/${path}`+(method==='GET'?'?ref=main':''),{
     method,cache:'no-store',body:body?JSON.stringify(body):undefined,
-    headers:{Authorization:`Bearer ${TOKEN}`,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}
+    headers:{Authorization:`Bearer ${TOKEN}`,Accept:accept,'X-GitHub-Api-Version':'2022-11-28'}
   });
 }
 class ApiError extends Error{constructor(status,msg){super(msg);this.status=status;}}
@@ -193,8 +195,10 @@ function explain(r){
 }
 async function getFile(name){
   const r=await gh('GET',`data/${name}.json`);
+  if(name==='copy'&&r.status===404)return {sha:null,data:{}};
   if(!r.ok)throw new ApiError(r.status,explain(r));
   const j=await r.json();
+  if(name==='copy'&&!j.content){const raw=await gh('GET',`data/${name}.json`,undefined,'application/vnd.github.raw+json');if(!raw.ok)throw new ApiError(raw.status,explain(raw));return {sha:j.sha,data:await raw.json()};}
   return {sha:j.sha,data:JSON.parse(b64ToStr(j.content||'')||'{}')};
 }
 
@@ -221,15 +225,16 @@ function project(){
   if(view.guidance)renderGuide(Object.values(view.guidance));
   if(view.posts)renderPosts(Object.values(view.posts));
   if(view.settings){const inp=$('discord-invite');if(inp&&!inp.value)inp.value=view.settings.discord_invite||'';const sheet=$('key-sheet');if(sheet&&view.settings.key_intake_sheet)sheet.href=view.settings.key_intake_sheet;}
+  if(view.copy){COPY=docsOf(view.copy);renderCopy();}
   stamp();
 }
 
 async function refresh(){
   if(!TOKEN||refreshing||flushing)return;
-  refreshing=true;let keyError='';
+  refreshing=true;let keyError='';const copyRevisionAtStart=COPY_WRITE_REVISION,copyReadAtStart=++COPY_READ_REVISION;
   try{
     const got=await Promise.all(FILES.map(f=>getFile(f).then(x=>[f,x.data])));
-    got.forEach(([f,d])=>{RAW[f]=d;});
+    got.forEach(([f,d])=>{if(f!=='copy'||(copyRevisionAtStart===COPY_WRITE_REVISION&&copyReadAtStart===COPY_READ_REVISION))RAW[f]=d;});
     if(KEYS_KEY){try{const pool=await getKeyPool();KEYS=pool.data;KEYS_READY=true;}catch(e){KEYS_READY=false;keyError='The creator key pool could not load. Other desk data is still available.';}}
     lastOk=Date.now();
     if(!QUEUE.length)setErr(keyError);
@@ -311,6 +316,8 @@ $('forget').addEventListener('click',()=>{
   if(QUEUE.length&&!confirm('Some taps have not saved yet. Lock the app anyway?'))return;
   forgetDeviceKey();LS.del('queue');TOKEN='';KEYS_KEY=null;KEYS_READY=false;QUEUE=[];RAW={};showGate();
 });
+
+setupCopyLab();
 
 /* ---------- unlock: a password opens vault.json, which holds the GitHub token ---------- */
 const b64ToBytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));

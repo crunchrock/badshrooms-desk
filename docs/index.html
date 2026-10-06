@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261002-1">
+<link rel="stylesheet" href="styles.css?v=20261005-copylab">
 </head>
 <body>
 <div class="setup" id="setup" hidden>
@@ -43,6 +43,7 @@
   <button type="button" data-view="today" aria-pressed="true">Do now</button>
   <button type="button" data-view="numbers" aria-pressed="false">Numbers</button>
   <button type="button" data-view="creators" aria-pressed="false">Creators</button>
+  <button type="button" data-view="copy" aria-pressed="false">Copy Lab</button>
   <button type="button" data-view="more" aria-pressed="false">More</button>
 </nav>
 
@@ -109,6 +110,27 @@
   </div>
   <div class="creators" id="creator-list"><div class="empty">Creators load here.</div></div>
   <button type="button" class="load-more" id="creator-more" hidden>Show five more</button>
+</section>
+
+<section id="copy" data-panel="copy" hidden>
+  <p class="eyebrow">GAME COPY</p>
+  <h2>Copy Lab</h2>
+  <p>Import the latest editable TSV from The Green Room. Edit and approve wording here, then export approved rows and apply them in Unity. Nothing here publishes to Steam.</p>
+  <div class="copy-tools">
+    <label class="upload-btn">Import Green Room TSV<input id="copy-import" type="file" accept=".tsv,text/tab-separated-values,text/plain"></label>
+    <button type="button" id="copy-export">Export approved TSV</button>
+    <button type="button" id="copy-refresh">Refresh copy</button>
+    <span id="copy-counts" class="meta">Copy data loads here.</span>
+  </div>
+  <p class="meta" id="copy-sync"></p>
+  <div class="copy-filters">
+    <input type="search" id="copy-search" placeholder="Search text, ID, group, or context" aria-label="Search game copy">
+    <select id="copy-status" aria-label="Filter by review state">
+      <option value="all">All states</option><option value="unreviewed">Unreviewed</option><option value="draft">Draft</option><option value="approved">Approved</option><option value="applied">Applied</option><option value="stale">Needs refresh</option><option value="orphan">Missing from source</option>
+    </select>
+  </div>
+  <div id="copy-list" class="copy-list"><div class="empty">Import a Green Room TSV to start the copy ledger.</div></div>
+  <button type="button" id="copy-more" class="load-more" hidden>Show more</button>
 </section>
 
 <section id="more" data-panel="more" hidden>
@@ -182,6 +204,7 @@ hello@crunchrock.games</pre><button class="copy" data-copy="tpl-email" type="but
 </section>
 </main>
 </div>
-<script src="app.js?v=20261002-1"></script>
+<script src="copy-lab.js?v=20261005-copylab"></script>
+<script src="app.js?v=20261005-copylab"></script>
 </body>
 </html>
